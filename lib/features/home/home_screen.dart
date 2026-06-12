@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
+import '../../data/repositories/providers.dart';
+import '../../data/models/daily_mission.dart';
 import 'home_notifier.dart';
 import 'widgets/monster_display.dart';
 import 'widgets/exp_bar.dart';
@@ -92,6 +94,8 @@ class HomeScreen extends ConsumerWidget {
                     totalDistanceKm: user.totalDistanceKm,
                     currentCoins: user.currentCoins,
                   ),
+                  const SizedBox(height: 20),
+                  _DailyMissionsCard(),
                   const SizedBox(height: 28),
                   SizedBox(
                     width: double.infinity,
@@ -113,6 +117,76 @@ class HomeScreen extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _DailyMissionsCard extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_DailyMissionsCard> createState() =>
+      _DailyMissionsCardState();
+}
+
+class _DailyMissionsCardState extends ConsumerState<_DailyMissionsCard> {
+  List<DailyMission> _missions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final repo = ref.read(missionRepositoryProvider);
+    final ms = await repo.loadOrRefresh();
+    if (mounted) setState(() => _missions = ms);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final done = _missions.where((m) => m.isCompleted).length;
+    final total = _missions.length;
+    return GestureDetector(
+      onTap: () => context.push('/missions'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.surfaceLight),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.assignment, color: AppColors.primary, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('デイリーミッション',
+                      style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14)),
+                  const SizedBox(height: 4),
+                  Text('$done/$total 完了',
+                      style: const TextStyle(
+                          color: AppColors.textSecondary, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  LinearProgressIndicator(
+                    value: total > 0 ? done / total : 0,
+                    backgroundColor: AppColors.surfaceLight,
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+          ],
+        ),
+      ),
     );
   }
 }

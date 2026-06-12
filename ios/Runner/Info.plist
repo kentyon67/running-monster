@@ -8,6 +8,10 @@
 	<string>ランニング中もルートを記録するために位置情報を使用します。</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>ランニング中もルートを記録するために位置情報を使用します。</string>
+	<key>NSCameraUsageDescription</key>
+	<string>フレンドのQRコードをスキャンするためにカメラを使用します。</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

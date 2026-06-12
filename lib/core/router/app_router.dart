@@ -5,6 +5,9 @@ import '../../features/run/run_result_screen.dart';
 import '../../features/monster/monster_screen.dart';
 import '../../features/gacha/gacha_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/profile/profile_card_screen.dart';
+import '../../features/friends/friends_screen.dart';
+import '../../features/missions/missions_screen.dart';
 import '../../shared/widgets/main_scaffold.dart';
 import '../../data/models/run_record.dart';
 
@@ -41,6 +44,18 @@ final appRouter = GoRouter(
         final record = state.extra as RunRecord;
         return RunResultScreen(record: record);
       },
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => const ProfileCardScreen(),
+    ),
+    GoRoute(
+      path: '/friends',
+      builder: (context, state) => const FriendsScreen(),
+    ),
+    GoRoute(
+      path: '/missions',
+      builder: (context, state) => const MissionsScreen(),
     ),
   ],
 );

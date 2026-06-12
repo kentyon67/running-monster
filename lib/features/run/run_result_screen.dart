@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/exp_calculator.dart';
 import '../../core/utils/level_calculator.dart';
+import '../../core/utils/streak_calculator.dart';
 import '../../data/models/run_record.dart';
 import '../../data/repositories/providers.dart';
 import '../run/run_notifier.dart';
@@ -59,6 +60,44 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen> {
         });
       }
     }
+
+    // Check missions
+    final missionRepo = ref.read(missionRepositoryProvider);
+    await missionRepo.loadOrRefresh();
+    final completedMissions = await missionRepo.checkAndComplete(
+      widget.record,
+      userRepo.current.totalDistanceKm,
+      monsterRepo.current?.level ?? 1,
+    );
+    for (final m in completedMissions) {
+      userRepo.current.currentCoins += m.rewardCoins;
+    }
+    if (completedMissions.isNotEmpty) await userRepo.save(userRepo.current);
+
+    // Check achievements
+    final achievementRepo = ref.read(achievementRepositoryProvider);
+    await achievementRepo.load();
+    final runRepo2 = ref.read(runRepositoryProvider);
+    await runRepo2.loadAll();
+    final streak = StreakCalculator.calculate(runRepo2.all);
+    final gachaRepo = ref.read(gachaRepositoryProvider);
+    await gachaRepo.load();
+    final newAchievements = await achievementRepo.checkAll(
+      totalDistanceKm: userRepo.current.totalDistanceKm,
+      monsterLevel: monsterRepo.current?.level ?? 1,
+      gachaCount: gachaRepo.totalPulls,
+      streak: streak,
+      singleRunDistanceKm: widget.record.distanceKm,
+    );
+    // Award achievement rewards
+    for (final a in newAchievements) {
+      if (a.rewardType == 'coins') {
+        userRepo.current.currentCoins += a.rewardValue as int;
+      } else if (['aura', 'banner', 'frame', 'skin'].contains(a.rewardType)) {
+        await gachaRepo.awardItem(a.rewardValue as String, 'achievement');
+      }
+    }
+    if (newAchievements.isNotEmpty) await userRepo.save(userRepo.current);
 
     ref.invalidate(homeProvider);
     ref.read(runProvider.notifier).reset();
