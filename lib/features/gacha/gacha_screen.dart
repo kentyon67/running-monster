@@ -5,6 +5,7 @@ import '../../core/constants/gacha_data.dart';
 import '../../data/models/gacha_item.dart';
 import '../../data/repositories/providers.dart';
 import '../../services/ad_service.dart';
+import '../../services/haptic_service.dart';
 import '../home/home_notifier.dart';
 
 class GachaScreen extends ConsumerStatefulWidget {
@@ -54,6 +55,7 @@ class _GachaScreenState extends ConsumerState<GachaScreen>
       return;
     }
 
+    HapticService.gacha();
     setState(() => _pulling = true);
     await _spinCtrl.forward(from: 0);
 

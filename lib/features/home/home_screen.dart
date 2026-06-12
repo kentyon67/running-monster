@@ -4,8 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/repositories/providers.dart';
 import '../../data/models/daily_mission.dart';
+import '../../services/haptic_service.dart';
 import 'home_notifier.dart';
-import 'widgets/monster_display.dart';
+import 'widgets/animated_monster_display.dart';
 import 'widgets/exp_bar.dart';
 import 'widgets/stats_card.dart';
 
@@ -85,7 +86,7 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
 
-                  MonsterDisplay(monster: monster),
+                  AnimatedMonsterDisplay(monster: monster),
                   const SizedBox(height: 24),
                   ExpBar(totalExp: monster.exp, level: monster.level),
                   const SizedBox(height: 20),
@@ -101,7 +102,10 @@ class HomeScreen extends ConsumerWidget {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton.icon(
-                      onPressed: () => context.go('/run/active'),
+                      onPressed: () {
+                        HapticService.runStart();
+                        context.go('/run/active');
+                      },
                       icon: const Icon(Icons.directions_run, size: 24),
                       label: const Text('走る', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(

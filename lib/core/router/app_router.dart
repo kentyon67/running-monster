@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import '../../data/local/hive_boxes.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/run/run_screen.dart';
 import '../../features/run/run_result_screen.dart';
@@ -8,12 +9,23 @@ import '../../features/settings/settings_screen.dart';
 import '../../features/profile/profile_card_screen.dart';
 import '../../features/friends/friends_screen.dart';
 import '../../features/missions/missions_screen.dart';
+import '../../features/onboarding/onboarding_screen.dart';
+import '../../features/settings/privacy_policy_screen.dart';
 import '../../shared/widgets/main_scaffold.dart';
 import '../../data/models/run_record.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/home',
+  redirect: (context, state) {
+    final done = HiveBoxes.user.get('onboarding_complete') as bool? ?? false;
+    if (!done && state.uri.path != '/onboarding') return '/onboarding';
+    return null;
+  },
   routes: [
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => MainScaffold(shell: shell),
       branches: [
@@ -56,6 +68,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/missions',
       builder: (context, state) => const MissionsScreen(),
+    ),
+    GoRoute(
+      path: '/privacy',
+      builder: (context, state) => const PrivacyPolicyScreen(),
     ),
   ],
 );

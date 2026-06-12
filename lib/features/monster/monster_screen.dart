@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/evolution_tree.dart';
 import '../../data/repositories/providers.dart';
+import '../../services/haptic_service.dart';
 import '../../data/models/monster.dart';
 import '../../data/models/gacha_item.dart';
 import '../home/home_notifier.dart';
@@ -282,7 +283,8 @@ class _EvolutionTab extends ConsumerWidget {
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () async {
               Navigator.pop(ctx);
-              await _doEvolve(context, ref, choice);
+              HapticService.evolution();
+    await _doEvolve(context, ref, choice);
             },
             child: const Text('進化！', style: TextStyle(color: Colors.white)),
           ),

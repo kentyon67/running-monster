@@ -7,6 +7,7 @@ import '../../core/utils/level_calculator.dart';
 import '../../core/utils/streak_calculator.dart';
 import '../../data/models/run_record.dart';
 import '../../data/repositories/providers.dart';
+import '../../services/haptic_service.dart';
 import '../run/run_notifier.dart';
 import '../home/home_notifier.dart';
 import 'widgets/route_map.dart';
@@ -20,15 +21,31 @@ class RunResultScreen extends ConsumerStatefulWidget {
   ConsumerState<RunResultScreen> createState() => _RunResultScreenState();
 }
 
-class _RunResultScreenState extends ConsumerState<RunResultScreen> {
+class _RunResultScreenState extends ConsumerState<RunResultScreen>
+    with SingleTickerProviderStateMixin {
   bool _saved = false;
   bool _didLevelUp = false;
   int _newLevel = 1;
+  late AnimationController _levelUpCtrl;
+  late Animation<double> _levelUpScale;
+  late Animation<double> _levelUpFade;
 
   @override
   void initState() {
     super.initState();
+    _levelUpCtrl = AnimationController(
+        duration: const Duration(milliseconds: 700), vsync: this);
+    _levelUpScale = Tween<double>(begin: 0.5, end: 1.0).animate(
+        CurvedAnimation(parent: _levelUpCtrl, curve: Curves.elasticOut));
+    _levelUpFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _levelUpCtrl, curve: Curves.easeIn));
     WidgetsBinding.instance.addPostFrameCallback((_) => _saveResult());
+  }
+
+  @override
+  void dispose() {
+    _levelUpCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _saveResult() async {
@@ -58,6 +75,10 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen> {
           _didLevelUp = leveledUp;
           _newLevel = newLevel;
         });
+        if (leveledUp) {
+          HapticService.levelUp();
+          _levelUpCtrl.forward();
+        }
       }
     }
 
@@ -137,33 +158,48 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen> {
         child: Column(
           children: [
             if (_didLevelUp)
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: [Color(0xFF7B1FA2), Color(0xFF1565C0)]),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    const Text('LEVEL UP!',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold)),
-                    Text('Lv $_newLevel に上がりました！',
-                        style: const TextStyle(color: Colors.white70, fontSize: 16)),
-                    if (LevelCalculator.isEvolutionLevel(_newLevel))
-                      const Padding(
-                        padding: EdgeInsets.only(top: 8),
-                        child: Text('進化できます！モンスター画面へ',
+              FadeTransition(
+                opacity: _levelUpFade,
+                child: ScaleTransition(
+                  scale: _levelUpScale,
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFF7B1FA2), Color(0xFF1565C0)]),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF7B1FA2).withValues(alpha: 0.5),
+                          blurRadius: 24,
+                          spreadRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        const Text('✨ LEVEL UP! ✨',
                             style: TextStyle(
-                                color: AppColors.accent,
+                                color: Colors.white,
+                                fontSize: 28,
                                 fontWeight: FontWeight.bold)),
-                      ),
-                  ],
+                        const SizedBox(height: 4),
+                        Text('Lv $_newLevel に上がりました！',
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 16)),
+                        if (LevelCalculator.isEvolutionLevel(_newLevel))
+                          const Padding(
+                            padding: EdgeInsets.only(top: 8),
+                            child: Text('🎉 進化できます！モンスター画面へ',
+                                style: TextStyle(
+                                    color: AppColors.accent,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             if (r.routePoints.isNotEmpty)
