@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/repositories/providers.dart';
-import '../../data/models/daily_mission.dart';
 import '../../services/haptic_service.dart';
 import 'home_notifier.dart';
 import 'widgets/animated_monster_display.dart';
@@ -24,12 +23,44 @@ class HomeScreen extends ConsumerWidget {
       ),
       error: (e, _) => Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(child: Text('$e', style: const TextStyle(color: Colors.red))),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
+                const SizedBox(height: 16),
+                const Text('データの読み込みに失敗しました',
+                    style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('$e',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => ref.invalidate(homeProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('再試行'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
       data: (state) {
         if (state.monster == null) {
           return _MonsterSelectScreen(
-            onSelect: (color) => ref.read(homeProvider.notifier).createMonster(color),
+            onSelect: (color) =>
+                ref.read(homeProvider.notifier).createMonster(color),
           );
         }
 
@@ -42,17 +73,21 @@ class HomeScreen extends ConsumerWidget {
             backgroundColor: AppColors.background,
             elevation: 0,
             title: const Text('ランニングモンスター',
-                style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold)),
             actions: [
               Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: Row(
                   children: [
-                    const Icon(Icons.monetization_on, color: AppColors.gold, size: 18),
+                    const Icon(Icons.monetization_on,
+                        color: AppColors.gold, size: 18),
                     const SizedBox(width: 4),
                     Text('${user.currentCoins}',
                         style: const TextStyle(
-                            color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -65,12 +100,12 @@ class HomeScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // Evolution notification
                   if (monster.isEvolutionAvailable)
                     Container(
                       width: double.infinity,
                       margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 16),
                       decoration: BoxDecoration(
                         color: AppColors.accent.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
@@ -81,11 +116,12 @@ class HomeScreen extends ConsumerWidget {
                           Icon(Icons.auto_awesome, color: AppColors.accent),
                           SizedBox(width: 8),
                           Text('進化できます！モンスター画面へ',
-                              style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold)),
+                              style: TextStyle(
+                                  color: AppColors.accent,
+                                  fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
-
                   AnimatedMonsterDisplay(monster: monster),
                   const SizedBox(height: 24),
                   ExpBar(totalExp: monster.exp, level: monster.level),
@@ -96,7 +132,7 @@ class HomeScreen extends ConsumerWidget {
                     currentCoins: user.currentCoins,
                   ),
                   const SizedBox(height: 20),
-                  _DailyMissionsCard(),
+                  const _DailyMissionsCard(),
                   const SizedBox(height: 28),
                   SizedBox(
                     width: double.infinity,
@@ -107,11 +143,14 @@ class HomeScreen extends ConsumerWidget {
                         context.go('/run/active');
                       },
                       icon: const Icon(Icons.directions_run, size: 24),
-                      label: const Text('走る', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      label: const Text('走る',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                       ),
                     ),
                   ),
@@ -125,31 +164,14 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _DailyMissionsCard extends ConsumerStatefulWidget {
-  @override
-  ConsumerState<_DailyMissionsCard> createState() =>
-      _DailyMissionsCardState();
-}
-
-class _DailyMissionsCardState extends ConsumerState<_DailyMissionsCard> {
-  List<DailyMission> _missions = [];
+/// Stateless missions card — uses FutureProvider, no setState needed.
+class _DailyMissionsCard extends ConsumerWidget {
+  const _DailyMissionsCard();
 
   @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final missionsAsync = ref.watch(dailyMissionsProvider);
 
-  Future<void> _load() async {
-    final repo = ref.read(missionRepositoryProvider);
-    final ms = await repo.loadOrRefresh();
-    if (mounted) setState(() => _missions = ms);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final done = _missions.where((m) => m.isCompleted).length;
-    final total = _missions.length;
     return GestureDetector(
       onTap: () => context.push('/missions'),
       child: Container(
@@ -159,36 +181,60 @@ class _DailyMissionsCardState extends ConsumerState<_DailyMissionsCard> {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.surfaceLight),
         ),
-        child: Row(
-          children: [
-            const Icon(Icons.assignment, color: AppColors.primary, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('デイリーミッション',
-                      style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14)),
-                  const SizedBox(height: 4),
-                  Text('$done/$total 完了',
-                      style: const TextStyle(
-                          color: AppColors.textSecondary, fontSize: 12)),
-                  const SizedBox(height: 6),
-                  LinearProgressIndicator(
-                    value: total > 0 ? done / total : 0,
-                    backgroundColor: AppColors.surfaceLight,
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ],
-              ),
+        child: missionsAsync.when(
+          loading: () => const SizedBox(
+            height: 48,
+            child: Center(
+              child: CircularProgressIndicator(
+                  color: AppColors.primary, strokeWidth: 2),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-          ],
+          ),
+          error: (_, __) => const Row(
+            children: [
+              Icon(Icons.assignment, color: AppColors.primary, size: 22),
+              SizedBox(width: 12),
+              Text('デイリーミッション',
+                  style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold)),
+            ],
+          ),
+          data: (missions) {
+            final done = missions.where((m) => m.isCompleted).length;
+            final total = missions.length;
+            return Row(
+              children: [
+                const Icon(Icons.assignment, color: AppColors.primary, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('デイリーミッション',
+                          style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14)),
+                      const SizedBox(height: 4),
+                      Text('$done/$total 完了',
+                          style: const TextStyle(
+                              color: AppColors.textSecondary, fontSize: 12)),
+                      const SizedBox(height: 6),
+                      LinearProgressIndicator(
+                        value: total > 0 ? done / total : 0,
+                        backgroundColor: AppColors.surfaceLight,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppColors.primary),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right,
+                    color: AppColors.textSecondary),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -217,14 +263,21 @@ class _MonsterSelectScreen extends StatelessWidget {
                       fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               const Text('色の違いだけで能力差はありません',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                  style: TextStyle(
+                      color: AppColors.textSecondary, fontSize: 14)),
               const SizedBox(height: 40),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _ColorOption(color: 'red', label: '赤', emoji: '🔴', onTap: onSelect),
-                  _ColorOption(color: 'blue', label: '青', emoji: '🔵', onTap: onSelect),
-                  _ColorOption(color: 'green', label: '緑', emoji: '🟢', onTap: onSelect),
+                  _ColorOption(
+                      color: 'red', label: '赤', emoji: '🔴', onTap: onSelect),
+                  _ColorOption(
+                      color: 'blue', label: '青', emoji: '🔵', onTap: onSelect),
+                  _ColorOption(
+                      color: 'green',
+                      label: '緑',
+                      emoji: '🟢',
+                      onTap: onSelect),
                 ],
               ),
             ],
@@ -267,7 +320,8 @@ class _ColorOption extends StatelessWidget {
             const SizedBox(height: 8),
             Text(label,
                 style: const TextStyle(
-                    color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold)),
           ],
         ),
       ),

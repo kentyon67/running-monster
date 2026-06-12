@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/daily_mission.dart';
 import 'user_repository.dart';
 import 'monster_repository.dart';
 import 'run_repository.dart';
@@ -14,3 +15,9 @@ final gachaRepositoryProvider = Provider<GachaRepository>((ref) => GachaReposito
 final missionRepositoryProvider = Provider<MissionRepository>((ref) => MissionRepository());
 final achievementRepositoryProvider = Provider<AchievementRepository>((ref) => AchievementRepository());
 final friendRepositoryProvider = Provider<FriendRepository>((ref) => FriendRepository());
+
+/// Cached daily missions — auto-refreshes when missionRepositoryProvider changes.
+final dailyMissionsProvider = FutureProvider<List<DailyMission>>((ref) async {
+  final repo = ref.read(missionRepositoryProvider);
+  return repo.loadOrRefresh();
+});

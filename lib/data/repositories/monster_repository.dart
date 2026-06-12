@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../local/hive_boxes.dart';
 import '../models/monster.dart';
@@ -12,8 +13,15 @@ class MonsterRepository {
   Future<Monster?> load() async {
     final raw = HiveBoxes.monster.get(_key);
     if (raw == null) return null;
-    _cache = Monster.fromMap(raw as Map);
-    return _cache;
+    try {
+      _cache = Monster.fromMap(raw as Map);
+      return _cache;
+    } catch (e) {
+      debugPrint('MonsterRepository: corrupted monster data — $e. Resetting.');
+      await HiveBoxes.monster.delete(_key);
+      _cache = null;
+      return null;
+    }
   }
 
   Monster? get current => _cache;
@@ -26,10 +34,13 @@ class MonsterRepository {
 
   Future<void> save(Monster monster) async {
     _cache = monster;
-    await HiveBoxes.monster.put(_key, monster.toMap());
+    try {
+      await HiveBoxes.monster.put(_key, monster.toMap());
+    } catch (e) {
+      debugPrint('MonsterRepository: failed to save monster — $e');
+    }
   }
 
-  /// Add EXP and recalculate level. Returns (newLevel, didLevelUp).
   Future<(int newLevel, bool didLevelUp)> addExp(int exp) async {
     final monster = _cache!;
     final oldLevel = monster.level;

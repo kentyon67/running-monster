@@ -2,10 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:running_monster/core/utils/level_calculator.dart';
 import 'package:running_monster/core/utils/exp_calculator.dart';
 import 'package:running_monster/core/utils/gacha_engine.dart';
+import 'package:running_monster/core/utils/run_validator.dart';
 import 'package:running_monster/core/utils/streak_calculator.dart';
 import 'package:running_monster/data/models/run_record.dart';
 import 'package:running_monster/core/constants/gacha_data.dart';
 import 'package:running_monster/core/constants/evolution_tree.dart';
+import 'package:running_monster/core/constants/exp_constants.dart';
 
 void main() {
   group('LevelCalculator', () {
@@ -182,6 +184,55 @@ void main() {
       final node = kEvolutionTree['runmon_red']!;
       // beastmon and spiritmon have further evolutions
       expect(node.nextEvolutions, isNotEmpty);
+    });
+  });
+
+  group('RunValidator', () {
+    test('isAbnormalSpeed returns true when speed exceeds 25 km/h', () {
+      // 100m in 1s = 360 km/h
+      expect(RunValidator.isAbnormalSpeed(100.0, 1.0), isTrue);
+    });
+
+    test('isAbnormalSpeed returns false for normal running speed', () {
+      // 100m in 60s = 6 km/h
+      expect(RunValidator.isAbnormalSpeed(100.0, 60.0), isFalse);
+    });
+
+    test('isAbnormalSpeed returns true for zero duration', () {
+      expect(RunValidator.isAbnormalSpeed(10.0, 0.0), isTrue);
+    });
+
+    test('isAbnormalSpeed returns false at exact 25 km/h boundary', () {
+      // 25 km/h = 6.944 m/s → 100m in 14.4s = exactly 25 km/h (not > 25)
+      const distanceM = 100.0;
+      const durationS = distanceM / (kMaxSpeedKmh / 3.6);
+      expect(RunValidator.isAbnormalSpeed(distanceM, durationS), isFalse);
+    });
+
+    test('validate returns null for a valid run', () {
+      expect(RunValidator.validate(1.0, 300), isNull);
+    });
+
+    test('validate returns error when distance is below minimum', () {
+      expect(
+        RunValidator.validate(kMinRunDistanceKm - 0.01, 300),
+        isNotNull,
+      );
+    });
+
+    test('validate returns error when duration is below minimum', () {
+      expect(
+        RunValidator.validate(1.0, kMinRunDurationSeconds - 1),
+        isNotNull,
+      );
+    });
+
+    test('validate returns null at exact minimum distance boundary', () {
+      expect(RunValidator.validate(kMinRunDistanceKm, 300), isNull);
+    });
+
+    test('validate returns null at exact minimum duration boundary', () {
+      expect(RunValidator.validate(1.0, kMinRunDurationSeconds), isNull);
     });
   });
 }
