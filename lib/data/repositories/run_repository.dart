@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../local/hive_boxes.dart';
 import '../models/run_record.dart';
 
@@ -6,21 +7,31 @@ class RunRepository {
 
   Future<List<RunRecord>> loadAll() async {
     final box = HiveBoxes.runRecords;
-    _cache = box.values
-        .map((v) => RunRecord.fromMap(v as Map))
-        .toList()
-      ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    final records = <RunRecord>[];
+    for (final v in box.values) {
+      try {
+        if (v == null) continue;
+        records.add(RunRecord.fromMap(v as Map));
+      } catch (e) {
+        debugPrint('RunRepository: corrupted record — $e');
+      }
+    }
+    records.sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    _cache = records;
     return _cache!;
   }
 
   List<RunRecord> get all => _cache ?? [];
 
   Future<void> save(RunRecord record) async {
-    await HiveBoxes.runRecords.put(record.id, record.toMap());
-    _cache = null; // invalidate cache
+    try {
+      await HiveBoxes.runRecords.put(record.id, record.toMap());
+    } catch (e) {
+      debugPrint('RunRepository: failed to save record ${record.id} — $e');
+    }
+    _cache = null;
   }
 
-  /// Returns total distance run today.
   double todayDistanceKm() {
     final today = DateTime.now();
     return all

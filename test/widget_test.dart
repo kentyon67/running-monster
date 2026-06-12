@@ -93,7 +93,7 @@ void main() {
     });
 
     test('rarity rates sum to 1.0', () {
-      final total = kGachaRateN + kGachaRateR + kGachaRateSR + kGachaRateSSR;
+      const total = kGachaRateN + kGachaRateR + kGachaRateSR + kGachaRateSSR;
       expect(total, closeTo(1.0, 0.0001));
     });
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../local/hive_boxes.dart';
 import '../models/achievement.dart';
 import '../../core/constants/achievement_data.dart';
@@ -7,11 +8,16 @@ class AchievementRepository {
 
   Future<void> load() async {
     final box = HiveBoxes.achievements;
-    // Merge stored state with definitions (add new ones if not present)
     final stored = <String, Achievement>{};
     for (final key in box.keys) {
-      final a = Achievement.fromMap(box.get(key) as Map);
-      stored[a.id] = a;
+      try {
+        final raw = box.get(key);
+        if (raw == null) continue;
+        final a = Achievement.fromMap(raw as Map);
+        stored[a.id] = a;
+      } catch (e) {
+        debugPrint('AchievementRepository: corrupted entry $key — $e');
+      }
     }
     _cache = kAchievementDefs.map((def) {
       if (stored.containsKey(def['id'])) return stored[def['id']]!;
@@ -31,7 +37,6 @@ class AchievementRepository {
   List<Achievement> get completed => _cache.where((a) => a.isCompleted).toList();
   List<Achievement> get incomplete => _cache.where((a) => !a.isCompleted).toList();
 
-  /// Check achievements against current stats. Returns newly completed ones.
   Future<List<Achievement>> checkAll({
     required double totalDistanceKm,
     required int monsterLevel,
@@ -46,25 +51,33 @@ class AchievementRepository {
       final cond = ach.condition;
       final type = cond['type'] as String;
 
-      switch (type) {
-        case 'total_distance':
-          done = totalDistanceKm >= (cond['value'] as num).toDouble();
-        case 'single_distance':
-          if (singleRunDistanceKm != null) {
-            done = singleRunDistanceKm >= (cond['value'] as num).toDouble();
-          }
-        case 'level':
-          done = monsterLevel >= (cond['value'] as int);
-        case 'gacha_count':
-          done = gachaCount >= (cond['value'] as int);
-        case 'streak':
-          done = streak >= (cond['value'] as int);
+      try {
+        switch (type) {
+          case 'total_distance':
+            done = totalDistanceKm >= (cond['value'] as num).toDouble();
+          case 'single_distance':
+            if (singleRunDistanceKm != null) {
+              done = singleRunDistanceKm >= (cond['value'] as num).toDouble();
+            }
+          case 'level':
+            done = monsterLevel >= (cond['value'] as int);
+          case 'gacha_count':
+            done = gachaCount >= (cond['value'] as int);
+          case 'streak':
+            done = streak >= (cond['value'] as int);
+        }
+      } catch (e) {
+        debugPrint('AchievementRepository: error evaluating ${ach.id} — $e');
       }
 
       if (done) {
         ach.isCompleted = true;
         ach.completedAt = DateTime.now();
-        await HiveBoxes.achievements.put(ach.id, ach.toMap());
+        try {
+          await HiveBoxes.achievements.put(ach.id, ach.toMap());
+        } catch (e) {
+          debugPrint('AchievementRepository: failed to save ${ach.id} — $e');
+        }
         newlyCompleted.add(ach);
       }
     }

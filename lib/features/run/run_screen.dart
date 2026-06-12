@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/haptic_service.dart';
@@ -7,7 +8,6 @@ import 'run_notifier.dart';
 import 'widgets/run_stats_panel.dart';
 import 'widgets/route_map.dart';
 
-/// Tab screen — shows a "Start Run" button with animated runner icon.
 class RunScreen extends ConsumerWidget {
   const RunScreen({super.key});
 
@@ -186,6 +186,69 @@ class _RunActiveScreenState extends ConsumerState<RunActiveScreen> {
     if (_started) return;
     _started = true;
     await ref.read(runProvider.notifier).startRun();
+
+    if (!mounted) return;
+    final runState = ref.read(runProvider);
+    if (runState.errorMessage != null) {
+      _showGpsErrorDialog(runState.errorMessage!, runState.gpsErrorType);
+    }
+  }
+
+  void _showGpsErrorDialog(String message, GpsErrorType? errorType) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Row(
+          children: [
+            Icon(
+              errorType == GpsErrorType.permissionDeniedForever
+                  ? Icons.lock_outline
+                  : Icons.location_off,
+              color: Colors.redAccent,
+            ),
+            const SizedBox(width: 8),
+            const Text('GPS エラー',
+                style: TextStyle(color: AppColors.textPrimary)),
+          ],
+        ),
+        content: Text(message,
+            style: const TextStyle(
+                color: AppColors.textSecondary, fontSize: 14)),
+        actions: [
+          if (errorType == GpsErrorType.permissionDeniedForever)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Geolocator.openAppSettings();
+                context.go('/home');
+              },
+              child: const Text('設定を開く',
+                  style: TextStyle(color: AppColors.primary)),
+            )
+          else if (errorType == GpsErrorType.serviceDisabled)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Geolocator.openLocationSettings();
+                context.go('/home');
+              },
+              child: const Text('位置情報設定へ',
+                  style: TextStyle(color: AppColors.primary)),
+            )
+          else
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                context.go('/home');
+              },
+              child: const Text('戻る',
+                  style: TextStyle(color: AppColors.primary)),
+            ),
+        ],
+      ),
+    );
   }
 
   Future<void> _onFinish() async {
@@ -217,8 +280,10 @@ class _RunActiveScreenState extends ConsumerState<RunActiveScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final runState = ref.watch(runProvider);
-    final isPaused = runState.status == RunStatus.paused;
+    // Use select() to avoid rebuilding the whole tree on every GPS tick
+    final status = ref.watch(runProvider.select((s) => s.status));
+    final gpsAcquired = ref.watch(runProvider.select((s) => s.gpsAcquired));
+    final isPaused = status == RunStatus.paused;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -235,14 +300,20 @@ class _RunActiveScreenState extends ConsumerState<RunActiveScreen> {
                     height: 10,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isPaused ? AppColors.accent : AppColors.primary,
+                      color: isPaused
+                          ? AppColors.accent
+                          : (gpsAcquired ? AppColors.primary : Colors.orange),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    isPaused ? '一時停止中' : '記録中...',
+                    isPaused
+                        ? '一時停止中'
+                        : (gpsAcquired ? '記録中...' : 'GPS取得中...'),
                     style: TextStyle(
-                      color: isPaused ? AppColors.accent : AppColors.primary,
+                      color: isPaused
+                          ? AppColors.accent
+                          : (gpsAcquired ? AppColors.primary : Colors.orange),
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -251,12 +322,12 @@ class _RunActiveScreenState extends ConsumerState<RunActiveScreen> {
               ),
             ),
 
-            // Map area
+            // Map area — only rebuilds when routePoints changes
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(24)),
-                child: RouteMap(points: runState.routePoints),
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(24)),
+                child: _RouteMapWatcher(),
               ),
             ),
 
@@ -265,26 +336,17 @@ class _RunActiveScreenState extends ConsumerState<RunActiveScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
               child: Column(
                 children: [
-                  // Large distance display
-                  _LargeDistanceDisplay(distanceKm: runState.distanceKm),
+                  _LargeDistanceDisplay(),
                   const SizedBox(height: 12),
-                  // Time + Pace
-                  RunStatsPanel(
-                    distanceKm: runState.distanceKm,
-                    elapsedSeconds: runState.elapsedSeconds,
-                    paceMinPerKm: runState.paceMinPerKm,
-                    compact: true,
-                  ),
+                  _RunStatsPanelWatcher(),
                   const SizedBox(height: 16),
-                  // Buttons
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: _togglePause,
-                          icon: Icon(isPaused
-                              ? Icons.play_arrow
-                              : Icons.pause),
+                          icon: Icon(
+                              isPaused ? Icons.play_arrow : Icons.pause),
                           label: Text(isPaused ? '再開' : '一時停止'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.textPrimary,
@@ -303,7 +365,8 @@ class _RunActiveScreenState extends ConsumerState<RunActiveScreen> {
                           onPressed: _onFinish,
                           icon: const Icon(Icons.stop_circle),
                           label: const Text('終了',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
+                              style:
+                                  TextStyle(fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.redAccent,
                             foregroundColor: Colors.white,
@@ -326,12 +389,38 @@ class _RunActiveScreenState extends ConsumerState<RunActiveScreen> {
   }
 }
 
-class _LargeDistanceDisplay extends StatelessWidget {
-  final double distanceKm;
-  const _LargeDistanceDisplay({required this.distanceKm});
-
+/// Isolated widget — only rebuilds when routePoints change
+class _RouteMapWatcher extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final points = ref.watch(runProvider.select((s) => s.routePoints));
+    return RouteMap(points: points);
+  }
+}
+
+/// Isolated widget — only rebuilds when distance/elapsed/pace change
+class _RunStatsPanelWatcher extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final distanceKm = ref.watch(runProvider.select((s) => s.distanceKm));
+    final elapsedSeconds =
+        ref.watch(runProvider.select((s) => s.elapsedSeconds));
+    final paceMinPerKm =
+        ref.watch(runProvider.select((s) => s.paceMinPerKm));
+    return RunStatsPanel(
+      distanceKm: distanceKm,
+      elapsedSeconds: elapsedSeconds,
+      paceMinPerKm: paceMinPerKm,
+      compact: true,
+    );
+  }
+}
+
+/// Isolated widget — only rebuilds when distanceKm changes
+class _LargeDistanceDisplay extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final distanceKm = ref.watch(runProvider.select((s) => s.distanceKm));
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
       decoration: BoxDecoration(

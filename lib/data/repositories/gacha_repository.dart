@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../local/hive_boxes.dart';
 import '../models/gacha_item.dart';
 import '../../core/constants/gacha_data.dart';
@@ -14,7 +15,17 @@ class GachaRepository {
     _totalPulls = (box.get(_pullCountKey) as int?) ?? 0;
     _cache = box.keys
         .where((k) => k != _pullCountKey)
-        .map((k) => GachaItem.fromMap(box.get(k) as Map))
+        .map((k) {
+          try {
+            final raw = box.get(k);
+            if (raw == null) return null;
+            return GachaItem.fromMap(raw as Map);
+          } catch (e) {
+            debugPrint('GachaRepository: corrupted item $k — $e');
+            return null;
+          }
+        })
+        .whereType<GachaItem>()
         .toList();
   }
 
@@ -32,11 +43,19 @@ class GachaRepository {
         item.owned = true;
         _cache.removeWhere((e) => e.id == item.id);
         _cache.add(item);
-        await HiveBoxes.gachaItems.put(item.id, item.toMap());
+        try {
+          await HiveBoxes.gachaItems.put(item.id, item.toMap());
+        } catch (e) {
+          debugPrint('GachaRepository: failed to save item ${item.id} — $e');
+        }
       }
     }
     _totalPulls += count;
-    await HiveBoxes.gachaItems.put(_pullCountKey, _totalPulls);
+    try {
+      await HiveBoxes.gachaItems.put(_pullCountKey, _totalPulls);
+    } catch (e) {
+      debugPrint('GachaRepository: failed to save pull count — $e');
+    }
     return results;
   }
 
@@ -57,7 +76,11 @@ class GachaRepository {
       source: source,
     );
     _cache.add(item);
-    await HiveBoxes.gachaItems.put(item.id, item.toMap());
+    try {
+      await HiveBoxes.gachaItems.put(item.id, item.toMap());
+    } catch (e) {
+      debugPrint('GachaRepository: failed to award item $itemId — $e');
+    }
   }
 
   List<GachaItem> itemsByType(String type) =>

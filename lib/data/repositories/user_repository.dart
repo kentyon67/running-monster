@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../local/hive_boxes.dart';
 import '../models/user.dart';
@@ -7,7 +8,6 @@ class UserRepository {
 
   User? _cache;
 
-  /// Load (or create) the user. Also handles weekly distance reset.
   Future<User> loadOrCreate() async {
     final raw = HiveBoxes.user.get(_key);
     User user;
@@ -15,7 +15,13 @@ class UserRepository {
       user = User.initial(id: const Uuid().v4());
       await save(user);
     } else {
-      user = User.fromMap(raw as Map);
+      try {
+        user = User.fromMap(raw as Map);
+      } catch (e) {
+        debugPrint('UserRepository: corrupted user data — $e. Creating fresh user.');
+        user = User.initial(id: const Uuid().v4());
+        await save(user);
+      }
     }
     _cache = _applyWeeklyReset(user);
     if (_cache != user) await save(_cache!);
@@ -26,10 +32,13 @@ class UserRepository {
 
   Future<void> save(User user) async {
     _cache = user;
-    await HiveBoxes.user.put(_key, user.toMap());
+    try {
+      await HiveBoxes.user.put(_key, user.toMap());
+    } catch (e) {
+      debugPrint('UserRepository: failed to save user — $e');
+    }
   }
 
-  /// Reset weeklyDistanceKm if current Monday is after lastWeeklyResetDate.
   User _applyWeeklyReset(User user) {
     final now = DateTime.now();
     final thisMonday = _monday(now);

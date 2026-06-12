@@ -64,9 +64,16 @@ class _GachaScreenState extends ConsumerState<GachaScreen>
     await gachaRepo.load();
     await userRepo.loadOrCreate();
 
+    // Re-validate coins at pull time (guard against race conditions)
+    final u = userRepo.current;
+    if (u.currentCoins < cost) {
+      setState(() => _pulling = false);
+      if (mounted) _showInsufficientCoins(cost);
+      return;
+    }
+
     final results = await gachaRepo.pullGacha(count);
 
-    final u = userRepo.current;
     u.currentCoins -= cost;
     await userRepo.save(u);
 

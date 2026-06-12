@@ -10,6 +10,14 @@ import '../../data/models/run_record.dart';
 
 enum RunStatus { idle, running, paused, finished }
 
+// Distinct GPS error codes surfaced to UI
+enum GpsErrorType {
+  serviceDisabled,
+  permissionDenied,
+  permissionDeniedForever,
+  timeout,
+}
+
 class RunState {
   final RunStatus status;
   final double distanceKm;
@@ -17,7 +25,9 @@ class RunState {
   final double paceMinPerKm;
   final List<RoutePoint> routePoints;
   final String? errorMessage;
+  final GpsErrorType? gpsErrorType;
   final RunRecord? finishedRecord;
+  final bool gpsAcquired;
 
   const RunState({
     this.status = RunStatus.idle,
@@ -26,7 +36,9 @@ class RunState {
     this.paceMinPerKm = 0,
     this.routePoints = const [],
     this.errorMessage,
+    this.gpsErrorType,
     this.finishedRecord,
+    this.gpsAcquired = false,
   });
 
   RunState copyWith({
@@ -36,7 +48,9 @@ class RunState {
     double? paceMinPerKm,
     List<RoutePoint>? routePoints,
     String? errorMessage,
+    GpsErrorType? gpsErrorType,
     RunRecord? finishedRecord,
+    bool? gpsAcquired,
   }) =>
       RunState(
         status: status ?? this.status,
@@ -45,34 +59,54 @@ class RunState {
         paceMinPerKm: paceMinPerKm ?? this.paceMinPerKm,
         routePoints: routePoints ?? this.routePoints,
         errorMessage: errorMessage,
+        gpsErrorType: gpsErrorType,
         finishedRecord: finishedRecord ?? this.finishedRecord,
+        gpsAcquired: gpsAcquired ?? this.gpsAcquired,
       );
 }
 
 class RunNotifier extends Notifier<RunState> {
   StreamSubscription<Position>? _positionSub;
   Timer? _timer;
+  Timer? _gpsTimeoutTimer;
   Position? _lastPosition;
   DateTime? _startTime;
   int _pausedSeconds = 0;
   DateTime? _pauseStart;
 
+  static const _gpsTimeoutSeconds = 20;
+
   @override
   RunState build() => const RunState();
 
-  Future<bool> requestPermission() async {
+  Future<void> startRun() async {
+    // 1. Check if location service is enabled at OS level
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      state = state.copyWith(
+        errorMessage: '位置情報サービスをONにしてください（設定 → プライバシーとセキュリティ → 位置情報サービス）',
+        gpsErrorType: GpsErrorType.serviceDisabled,
+      );
+      return;
+    }
+
+    // 2. Check and request permission
     LocationPermission perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.deniedForever) {
+      state = state.copyWith(
+        errorMessage: '位置情報の許可が永久に拒否されています。設定アプリから許可してください。',
+        gpsErrorType: GpsErrorType.permissionDeniedForever,
+      );
+      return;
+    }
     if (perm == LocationPermission.denied) {
       perm = await Geolocator.requestPermission();
     }
-    return perm == LocationPermission.always ||
-        perm == LocationPermission.whileInUse;
-  }
-
-  Future<void> startRun() async {
-    final hasPermission = await requestPermission();
-    if (!hasPermission) {
-      state = state.copyWith(errorMessage: '位置情報の許可が必要です');
+    if (perm != LocationPermission.always && perm != LocationPermission.whileInUse) {
+      state = state.copyWith(
+        errorMessage: '位置情報の許可が必要です',
+        gpsErrorType: GpsErrorType.permissionDenied,
+      );
       return;
     }
 
@@ -81,14 +115,35 @@ class RunNotifier extends Notifier<RunState> {
     _pausedSeconds = 0;
     _lastPosition = null;
 
-    state = const RunState(status: RunStatus.running);
+    state = const RunState(status: RunStatus.running, gpsAcquired: false);
+
+    // 3. GPS signal timeout — show warning if no position within N seconds
+    _gpsTimeoutTimer = Timer(const Duration(seconds: _gpsTimeoutSeconds), () {
+      if (_lastPosition == null && state.status == RunStatus.running) {
+        state = state.copyWith(
+          errorMessage: 'GPS信号を取得できませんでした。屋外で再試行してください。',
+          gpsErrorType: GpsErrorType.timeout,
+          status: RunStatus.idle,
+        );
+        _cleanup();
+      }
+    });
 
     _positionSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 5, // update every 5 meters
+        distanceFilter: 5,
       ),
-    ).listen(_onPosition);
+    ).listen(
+      _onPosition,
+      onError: (e) {
+        state = state.copyWith(
+          errorMessage: 'GPS接続エラーが発生しました。再試行してください。',
+          status: RunStatus.idle,
+        );
+        _cleanup();
+      },
+    );
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (state.status == RunStatus.running) {
@@ -103,6 +158,8 @@ class RunNotifier extends Notifier<RunState> {
 
   void _onPosition(Position pos) {
     if (state.status != RunStatus.running) return;
+
+    _gpsTimeoutTimer?.cancel();
 
     final newPoint = RoutePoint(
       latitude: pos.latitude,
@@ -130,6 +187,7 @@ class RunNotifier extends Notifier<RunState> {
     state = state.copyWith(
       distanceKm: state.distanceKm + addedDistance,
       routePoints: newPoints,
+      gpsAcquired: true,
     );
   }
 
@@ -147,7 +205,6 @@ class RunNotifier extends Notifier<RunState> {
     state = state.copyWith(status: RunStatus.running);
   }
 
-  /// Finish run and build RunRecord. Returns null if invalid.
   RunRecord? finishRun() {
     final elapsed = state.elapsedSeconds;
     final distance = state.distanceKm;
@@ -186,6 +243,7 @@ class RunNotifier extends Notifier<RunState> {
   void _cleanup() {
     _positionSub?.cancel();
     _timer?.cancel();
+    _gpsTimeoutTimer?.cancel();
     WakelockPlus.disable();
   }
 

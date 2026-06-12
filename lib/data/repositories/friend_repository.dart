@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../local/hive_boxes.dart';
 import '../models/friend_card.dart';
 
@@ -6,10 +7,18 @@ class FriendRepository {
 
   Future<void> load() async {
     final box = HiveBoxes.friendCards;
-    _cache = box.keys
-        .map((k) => FriendCard.fromMap(box.get(k) as Map))
-        .toList()
-      ..sort((a, b) => b.importedAt.compareTo(a.importedAt));
+    final cards = <FriendCard>[];
+    for (final k in box.keys) {
+      try {
+        final raw = box.get(k);
+        if (raw == null) continue;
+        cards.add(FriendCard.fromMap(raw as Map));
+      } catch (e) {
+        debugPrint('FriendRepository: corrupted entry $k — $e');
+      }
+    }
+    cards.sort((a, b) => b.importedAt.compareTo(a.importedAt));
+    _cache = cards;
   }
 
   List<FriendCard> get all => _cache;
@@ -27,11 +36,19 @@ class FriendRepository {
   Future<void> add(FriendCard card) async {
     if (isDuplicate(card.id)) return;
     _cache.insert(0, card);
-    await HiveBoxes.friendCards.put(card.id, card.toMap());
+    try {
+      await HiveBoxes.friendCards.put(card.id, card.toMap());
+    } catch (e) {
+      debugPrint('FriendRepository: failed to add friend ${card.id} — $e');
+    }
   }
 
   Future<void> remove(String id) async {
     _cache.removeWhere((c) => c.id == id);
-    await HiveBoxes.friendCards.delete(id);
+    try {
+      await HiveBoxes.friendCards.delete(id);
+    } catch (e) {
+      debugPrint('FriendRepository: failed to remove friend $id — $e');
+    }
   }
 }
