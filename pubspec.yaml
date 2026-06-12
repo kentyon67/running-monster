@@ -1,0 +1,47 @@
+name: running_monster
+description: ランニングモンスター - GPSランニングアプリ
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.5.1
+
+  # Navigation
+  go_router: ^14.6.1
+
+  # GPS
+  geolocator: ^13.0.2
+  permission_handler: ^11.3.1
+
+  # Map (OpenStreetMap, no API key required)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # Local storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Screen lock during run
+  wakelock_plus: ^1.2.8
+
+  # Utilities
+  uuid: ^4.5.1
+  intl: ^0.20.2
+
+  flutter_localizations:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
