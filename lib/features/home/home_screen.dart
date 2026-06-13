@@ -101,25 +101,28 @@ class HomeScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   if (monster.isEvolutionAvailable)
-                    Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.accent),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.auto_awesome, color: AppColors.accent),
-                          SizedBox(width: 8),
-                          Text('進化できます！モンスター画面へ',
-                              style: TextStyle(
-                                  color: AppColors.accent,
-                                  fontWeight: FontWeight.bold)),
-                        ],
+                    GestureDetector(
+                      onTap: () => context.go('/monster'),
+                      child: Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.accent),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.auto_awesome, color: AppColors.accent),
+                            SizedBox(width: 8),
+                            Text('進化できます！モンスター画面へ',
+                                style: TextStyle(
+                                    color: AppColors.accent,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
                       ),
                     ),
                   AnimatedMonsterDisplay(monster: monster),

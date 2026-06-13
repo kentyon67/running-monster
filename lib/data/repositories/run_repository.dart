@@ -24,12 +24,16 @@ class RunRepository {
   List<RunRecord> get all => _cache ?? [];
 
   Future<void> save(RunRecord record) async {
-    try {
-      await HiveBoxes.runRecords.put(record.id, record.toMap());
-    } catch (e) {
-      debugPrint('RunRepository: failed to save record ${record.id} — $e');
-    }
+    await HiveBoxes.runRecords.put(record.id, record.toMap());
     _cache = null;
+  }
+
+  int todayRunCount() {
+    final today = DateTime.now();
+    return all.where((r) =>
+      r.startedAt.year == today.year &&
+      r.startedAt.month == today.month &&
+      r.startedAt.day == today.day).length;
   }
 
   double todayDistanceKm() {

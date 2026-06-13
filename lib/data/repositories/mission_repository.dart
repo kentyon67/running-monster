@@ -66,7 +66,8 @@ class MissionRepository {
   List<DailyMission> get missions => _cache;
 
   Future<List<DailyMission>> checkAndComplete(
-      RunRecord? record, double totalDistanceKm, int monsterLevel) async {
+      RunRecord? record, double totalDistanceKm, int monsterLevel,
+      {int todayRunCount = 1}) async {
     final completed = <DailyMission>[];
     for (final mission in _cache) {
       if (mission.isCompleted) continue;
@@ -83,7 +84,10 @@ class MissionRepository {
               done = record.distanceKm >= (cond['value'] as num).toDouble();
             }
           case 'run_count':
-            if (record != null) done = true;
+            if (record != null) {
+              final required = (cond['value'] as num?)?.toInt() ?? 1;
+              done = todayRunCount >= required;
+            }
           case 'duration':
             if (record != null) {
               done = record.durationSeconds >= (cond['seconds'] as int);

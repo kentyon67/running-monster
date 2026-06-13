@@ -189,20 +189,32 @@ class _FriendListTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (friends.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people_outline,
+            const Icon(Icons.people_outline,
                 size: 64, color: AppColors.textSecondary),
-            SizedBox(height: 16),
-            Text('フレンドがいません',
+            const SizedBox(height: 16),
+            const Text('フレンドがいません',
                 style:
                     TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-            SizedBox(height: 8),
-            Text('QRコードをスキャンしてフレンドを追加しよう',
+            const SizedBox(height: 8),
+            const Text('QRコードをスキャンしてフレンドを追加しよう',
                 style:
                     TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => context.push('/profile'),
+              icon: const Icon(Icons.qr_code, size: 18),
+              label: const Text('自分のQRを共有する'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
           ],
         ),
       );

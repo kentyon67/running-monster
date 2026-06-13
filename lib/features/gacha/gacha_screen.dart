@@ -360,6 +360,7 @@ class _OwnedItemsPreview extends ConsumerStatefulWidget {
 
 class _OwnedItemsPreviewState extends ConsumerState<_OwnedItemsPreview> {
   int _count = 0;
+  int _totalPulls = 0;
 
   @override
   void initState() {
@@ -370,7 +371,12 @@ class _OwnedItemsPreviewState extends ConsumerState<_OwnedItemsPreview> {
   Future<void> _load() async {
     final repo = ref.read(gachaRepositoryProvider);
     await repo.load();
-    if (mounted) setState(() => _count = repo.ownedItems.length);
+    if (mounted) {
+      setState(() {
+        _count = repo.ownedItems.length;
+        _totalPulls = repo.totalPulls;
+      });
+    }
   }
 
   @override
@@ -387,8 +393,8 @@ class _OwnedItemsPreviewState extends ConsumerState<_OwnedItemsPreview> {
           Text('所持アイテム: $_count種',
               style: const TextStyle(
                   color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
-          const Text('合計ガチャ回数: ',
-              style: TextStyle(
+          Text('合計ガチャ回数: $_totalPulls',
+              style: const TextStyle(
                   color: AppColors.textSecondary, fontSize: 12)),
         ],
       ),

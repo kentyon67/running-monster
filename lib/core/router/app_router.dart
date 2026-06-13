@@ -53,7 +53,8 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/run/result',
       builder: (context, state) {
-        final record = state.extra as RunRecord;
+        final record = state.extra;
+        if (record is! RunRecord) return const HomeScreen();
         return RunResultScreen(record: record);
       },
     ),

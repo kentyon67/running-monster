@@ -62,13 +62,23 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ]),
           _Section(title: 'アプリ', children: [
-            _Item(
-              icon: Icons.notifications,
-              label: '通知設定',
-              subtitle: user?.notificationEnabled == true ? 'ON' : 'OFF',
-              onTap: user == null
-                  ? null
-                  : () => _toggleNotification(context, ref, user.notificationEnabled),
+            ListTile(
+              leading: const Icon(Icons.notifications,
+                  color: AppColors.textPrimary, size: 22),
+              title: const Text('通知設定',
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 15)),
+              subtitle: Text(
+                  user?.notificationEnabled == true ? 'ON' : 'OFF',
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, fontSize: 12)),
+              trailing: Switch(
+                value: user?.notificationEnabled ?? false,
+                activeThumbColor: AppColors.primary,
+                onChanged: user == null
+                    ? null
+                    : (val) =>
+                        _toggleNotification(context, ref, user.notificationEnabled),
+              ),
             ),
             _Item(
               icon: Icons.assignment,
@@ -85,12 +95,37 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ]),
           _Section(title: '法的情報', children: [
-            _Item(icon: Icons.description, label: '利用規約', onTap: () {}),
+            _Item(
+                icon: Icons.description,
+                label: '利用規約',
+                onTap: () => context.push('/privacy')),
             _Item(
                 icon: Icons.privacy_tip,
                 label: 'プライバシーポリシー',
-                onTap: () {}),
-            _Item(icon: Icons.mail, label: 'お問い合わせ', onTap: () {}),
+                onTap: () => context.push('/privacy')),
+            _Item(
+                icon: Icons.mail,
+                label: 'お問い合わせ',
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: AppColors.surface,
+                      title: const Text('お問い合わせ',
+                          style: TextStyle(color: AppColors.textPrimary)),
+                      content: const Text(
+                          'ご意見・ご要望は\nGitHub Issuesよりお寄せください。',
+                          style: TextStyle(color: AppColors.textSecondary)),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('閉じる',
+                              style: TextStyle(color: AppColors.primary)),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
           ]),
         ],
       ),

@@ -18,6 +18,6 @@ final friendRepositoryProvider = Provider<FriendRepository>((ref) => FriendRepos
 
 /// Cached daily missions — auto-refreshes when missionRepositoryProvider changes.
 final dailyMissionsProvider = FutureProvider<List<DailyMission>>((ref) async {
-  final repo = ref.read(missionRepositoryProvider);
+  final repo = ref.watch(missionRepositoryProvider);
   return repo.loadOrRefresh();
 });

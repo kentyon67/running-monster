@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:math' show max;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:uuid/uuid.dart';
@@ -75,6 +78,7 @@ class RunNotifier extends Notifier<RunState> {
   DateTime? _pauseStart;
 
   static const _gpsTimeoutSeconds = 20;
+  static const _fgChannel = MethodChannel('com.kentyon67.running_monster/foreground');
 
   @override
   RunState build() => const RunState();
@@ -111,6 +115,7 @@ class RunNotifier extends Notifier<RunState> {
     }
 
     await WakelockPlus.enable();
+    await _startForegroundService();
     _startTime = DateTime.now();
     _pausedSeconds = 0;
     _lastPosition = null;
@@ -147,7 +152,8 @@ class RunNotifier extends Notifier<RunState> {
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (state.status == RunStatus.running) {
-        final elapsed = DateTime.now().difference(_startTime!).inSeconds - _pausedSeconds;
+        if (_startTime == null) return;
+        final elapsed = max(0, DateTime.now().difference(_startTime!).inSeconds - _pausedSeconds);
         final pace = state.distanceKm > 0
             ? (elapsed / 60) / state.distanceKm
             : 0.0;
@@ -169,13 +175,23 @@ class RunNotifier extends Notifier<RunState> {
 
     double addedDistance = 0;
     if (_lastPosition != null) {
+      final dtMs = pos.timestamp
+          .difference(_lastPosition!.timestamp)
+          .inMilliseconds;
+      if (dtMs <= 0) {
+        _lastPosition = pos;
+        final newPoints = [...state.routePoints, newPoint];
+        state = state.copyWith(
+          routePoints: newPoints,
+          gpsAcquired: true,
+        );
+        return;
+      }
       final distM = Geolocator.distanceBetween(
         _lastPosition!.latitude, _lastPosition!.longitude,
         pos.latitude, pos.longitude,
       );
-      final dtSec = pos.timestamp
-          .difference(_lastPosition!.timestamp)
-          .inMilliseconds / 1000.0;
+      final dtSec = dtMs / 1000.0;
 
       if (!RunValidator.isAbnormalSpeed(distM, dtSec)) {
         addedDistance = distM / 1000.0;
@@ -240,11 +256,28 @@ class RunNotifier extends Notifier<RunState> {
     return record;
   }
 
-  void _cleanup() {
+  Future<void> _cleanup() async {
     _positionSub?.cancel();
     _timer?.cancel();
     _gpsTimeoutTimer?.cancel();
     WakelockPlus.disable();
+    await _stopForegroundService();
+  }
+
+  Future<void> _startForegroundService() async {
+    try {
+      await _fgChannel.invokeMethod<void>('startForeground');
+    } catch (e) {
+      debugPrint('RunNotifier: foreground service start failed — $e');
+    }
+  }
+
+  Future<void> _stopForegroundService() async {
+    try {
+      await _fgChannel.invokeMethod<void>('stopForeground');
+    } catch (e) {
+      debugPrint('RunNotifier: foreground service stop failed — $e');
+    }
   }
 
   void reset() {

@@ -27,7 +27,7 @@ class RouteMap extends StatelessWidget {
       children: [
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.example.running_monster',
+          userAgentPackageName: 'com.kentyon67.running_monster',
         ),
         if (hasPoints)
           PolylineLayer(

@@ -33,7 +33,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       emoji: '🐉',
       title: 'モンスターを育てよう',
       subtitle: '進化・ガチャ・フレンド',
-      description: 'レベルアップで進化を選択。\nガチャでアイテムを集め、\nフレンドとランキングを競おう！',
+      description: 'レベルアップで進化を選択。\nガチャでアイテムを集め、\nフレンドのプロフィールをQRコードで共有しよう！',
       color: AppColors.blue,
     ),
   ];

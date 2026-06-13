@@ -23,8 +23,12 @@ class UserRepository {
         await save(user);
       }
     }
-    _cache = _applyWeeklyReset(user);
-    if (_cache != user) await save(_cache!);
+    _cache = user;
+    final previousResetDate = user.lastWeeklyResetDate;
+    _applyWeeklyReset(user);
+    if (user.lastWeeklyResetDate != previousResetDate) {
+      await save(user);
+    }
     return _cache!;
   }
 

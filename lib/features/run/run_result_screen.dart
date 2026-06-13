@@ -8,6 +8,7 @@ import '../../core/utils/streak_calculator.dart';
 import '../../data/models/run_record.dart';
 import '../../data/repositories/providers.dart';
 import '../../services/haptic_service.dart';
+import '../../services/notification_service.dart';
 import '../run/run_notifier.dart';
 import '../home/home_notifier.dart';
 import 'widgets/route_map.dart';
@@ -60,7 +61,26 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
     await userRepo.loadOrCreate();
     await monsterRepo.load();
 
-    await runRepo.save(widget.record);
+    try {
+      await runRepo.save(widget.record);
+    } catch (e) {
+      debugPrint('RunResultScreen: run save failed — $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('ランデータの保存に失敗しました'),
+            action: SnackBarAction(
+              label: '再試行',
+              onPressed: () async {
+                try { await runRepo.save(widget.record); } catch (_) {}
+              },
+            ),
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    }
 
     final user = userRepo.current;
     user.totalDistanceKm += widget.record.distanceKm;
@@ -78,6 +98,7 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
         if (leveledUp) {
           HapticService.levelUp();
           _levelUpCtrl.forward();
+          await NotificationService.showLevelUpNotification(newLevel);
         }
       }
     }
@@ -89,6 +110,7 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
       widget.record,
       userRepo.current.totalDistanceKm,
       monsterRepo.current?.level ?? 1,
+      todayRunCount: runRepo.todayRunCount(),
     );
     for (final m in completedMissions) {
       userRepo.current.currentCoins += m.rewardCoins;
@@ -232,6 +254,23 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
                   iconColor: AppColors.gold),
             ]),
             const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: OutlinedButton.icon(
+                onPressed: () => context.go('/run/active'),
+                icon: const Icon(Icons.replay, size: 18),
+                label: const Text('もう一度走る'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               height: 52,

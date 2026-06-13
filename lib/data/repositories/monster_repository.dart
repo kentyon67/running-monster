@@ -34,15 +34,15 @@ class MonsterRepository {
 
   Future<void> save(Monster monster) async {
     _cache = monster;
-    try {
-      await HiveBoxes.monster.put(_key, monster.toMap());
-    } catch (e) {
-      debugPrint('MonsterRepository: failed to save monster — $e');
-    }
+    await HiveBoxes.monster.put(_key, monster.toMap());
   }
 
   Future<(int newLevel, bool didLevelUp)> addExp(int exp) async {
-    final monster = _cache!;
+    final monster = _cache;
+    if (monster == null) {
+      debugPrint('MonsterRepository: addExp called before load()');
+      return (0, false);
+    }
     final oldLevel = monster.level;
     monster.exp += exp;
     monster.level = LevelCalculator.levelFromExp(monster.exp);

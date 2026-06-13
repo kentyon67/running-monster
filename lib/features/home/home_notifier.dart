@@ -54,13 +54,15 @@ class HomeNotifier extends AsyncNotifier<HomeState> {
 
   Future<Monster> createMonster(String color) async {
     final monster = await _monsterRepo.createInitial(color: color);
-    state = AsyncData(state.value!.copyWith(monster: monster));
+    final current = state.value;
+    if (current != null) {
+      state = AsyncData(current.copyWith(monster: monster));
+    }
     return monster;
   }
 
   Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = AsyncData(await build());
+    ref.invalidateSelf();
   }
 }
 
