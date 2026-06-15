@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +11,9 @@ import '../../data/repositories/providers.dart';
 import '../../services/haptic_service.dart';
 import '../../services/notification_service.dart';
 import '../run/run_notifier.dart';
+import '../../data/models/monster.dart';
 import '../home/home_notifier.dart';
+import '../home/widgets/monster_painter.dart';
 import 'widgets/route_map.dart';
 
 class RunResultScreen extends ConsumerStatefulWidget {
@@ -23,13 +26,18 @@ class RunResultScreen extends ConsumerStatefulWidget {
 }
 
 class _RunResultScreenState extends ConsumerState<RunResultScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool _saved = false;
   bool _didLevelUp = false;
   int _newLevel = 1;
   late AnimationController _levelUpCtrl;
   late Animation<double> _levelUpScale;
   late Animation<double> _levelUpFade;
+  late AnimationController _monsterCtrl;
+  late Animation<double> _monsterAnim;
+  late AnimationController _counterCtrl;
+  late Animation<int> _expCounter;
+  late Animation<int> _coinCounter;
 
   @override
   void initState() {
@@ -40,12 +48,26 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
         CurvedAnimation(parent: _levelUpCtrl, curve: Curves.elasticOut));
     _levelUpFade = Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(parent: _levelUpCtrl, curve: Curves.easeIn));
+    _monsterCtrl = AnimationController(
+        duration: const Duration(seconds: 3), vsync: this)..repeat();
+    _monsterAnim = Tween<double>(begin: 0.0, end: math.pi * 2).animate(_monsterCtrl);
+    _counterCtrl = AnimationController(
+        duration: const Duration(milliseconds: 1400), vsync: this);
+    _expCounter = IntTween(begin: 0, end: widget.record.expGained)
+        .animate(CurvedAnimation(parent: _counterCtrl, curve: Curves.easeOut));
+    _coinCounter = IntTween(begin: 0, end: widget.record.coinsGained)
+        .animate(CurvedAnimation(parent: _counterCtrl, curve: Curves.easeOut));
+    Future.delayed(const Duration(milliseconds: 700), () {
+      if (mounted) _counterCtrl.forward();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) => _saveResult());
   }
 
   @override
   void dispose() {
     _levelUpCtrl.dispose();
+    _monsterCtrl.dispose();
+    _counterCtrl.dispose();
     super.dispose();
   }
 
@@ -165,6 +187,7 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
   Widget build(BuildContext context) {
     final r = widget.record;
     final bonus = ExpCalculator.bonusLabel(r.startedAt, r.distanceKm);
+    final monster = ref.watch(homeProvider).valueOrNull?.monster;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -172,13 +195,32 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
         backgroundColor: AppColors.background,
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text('ラン結果',
-            style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [AppColors.primaryLight, AppColors.accentLight],
+          ).createShader(bounds),
+          child: const Text('ラン結果',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20)),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            // Monster victory display
+            if (monster != null) ...[
+              _MonsterVictorySection(
+                monster: monster,
+                monsterAnim: _monsterAnim,
+                didLevelUp: _didLevelUp,
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Level-up banner
             if (_didLevelUp)
               FadeTransition(
                 opacity: _levelUpFade,
@@ -202,11 +244,12 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
                     ),
                     child: Column(
                       children: [
-                        const Text('✨ LEVEL UP! ✨',
+                        const Text('LEVEL UP!',
                             style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 28,
-                                fontWeight: FontWeight.bold)),
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 2)),
                         const SizedBox(height: 4),
                         Text('Lv $_newLevel に上がりました！',
                             style: const TextStyle(
@@ -214,17 +257,27 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
                         if (LevelCalculator.isEvolutionLevel(_newLevel))
                           const Padding(
                             padding: EdgeInsets.only(top: 8),
-                            child: Text('🎉 進化できます！モンスター画面へ',
-                                style: TextStyle(
-                                    color: AppColors.accent,
-                                    fontWeight: FontWeight.bold)),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.auto_awesome,
+                                    color: AppColors.accent, size: 16),
+                                SizedBox(width: 6),
+                                Text('進化できます！モンスター画面へ',
+                                    style: TextStyle(
+                                        color: AppColors.accent,
+                                        fontWeight: FontWeight.bold)),
+                              ],
+                            ),
                           ),
                       ],
                     ),
                   ),
                 ),
               ),
-            if (r.routePoints.isNotEmpty)
+
+            // Route map
+            if (r.routePoints.isNotEmpty) ...[
               SizedBox(
                 height: 200,
                 child: ClipRRect(
@@ -232,33 +285,41 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
                   child: RouteMap(points: r.routePoints, isLive: false),
                 ),
               ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+            ],
+
+            // Distance / time / pace card
             _ResultCard(children: [
               _ResultRow(label: '距離', value: '${r.distanceKm.toStringAsFixed(2)} km'),
               _ResultRow(label: '時間', value: _timeStr(r.durationSeconds)),
               _ResultRow(label: '平均ペース', value: '${_paceStr(r.averagePace)} /km'),
             ]),
             const SizedBox(height: 12),
-            _ResultCard(children: [
-              _ResultRow(
-                  label: '獲得EXP',
-                  value: '+${r.expGained} EXP',
-                  valueColor: AppColors.expBar),
-              if (bonus != null)
+
+            // Rewards card with animated counters
+            AnimatedBuilder(
+              animation: _counterCtrl,
+              builder: (_, __) => _ResultCard(children: [
                 _ResultRow(
-                    label: 'ボーナス', value: bonus, valueColor: AppColors.accent),
-              _ResultRow(
-                  label: '獲得コイン',
-                  value: '+${r.coinsGained}',
-                  icon: Icons.monetization_on,
-                  iconColor: AppColors.gold),
-            ]),
+                    label: '獲得EXP',
+                    value: '+${_expCounter.value} EXP',
+                    valueColor: AppColors.expBar),
+                if (bonus != null)
+                  _ResultRow(
+                      label: 'ボーナス', value: bonus, valueColor: AppColors.accent),
+                _ResultRow(
+                    label: '獲得コイン',
+                    value: '+${_coinCounter.value}',
+                    icon: Icons.monetization_on,
+                    iconColor: AppColors.gold),
+              ]),
+            ),
             const SizedBox(height: 28),
             SizedBox(
               width: double.infinity,
               height: 52,
               child: OutlinedButton.icon(
-                onPressed: () => context.go('/run/active'),
+                onPressed: () => context.go('/run'),
                 icon: const Icon(Icons.replay, size: 18),
                 label: const Text('もう一度走る'),
                 style: OutlinedButton.styleFrom(
@@ -288,6 +349,118 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Monster victory display at the top of result screen
+// ---------------------------------------------------------------------------
+class _MonsterVictorySection extends StatelessWidget {
+  final Monster monster;
+  final Animation<double> monsterAnim;
+  final bool didLevelUp;
+
+  const _MonsterVictorySection({
+    required this.monster,
+    required this.monsterAnim,
+    required this.didLevelUp,
+  });
+
+  Color get _glowColor {
+    switch (monster.color) {
+      case 'red': return AppColors.red;
+      case 'blue': return AppColors.blue;
+      default: return AppColors.green;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            _glowColor.withValues(alpha: 0.12),
+            AppColors.surface,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _glowColor.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 160,
+                height: 160,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      _glowColor.withValues(alpha: 0.22),
+                      _glowColor.withValues(alpha: 0.07),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.55, 1.0],
+                  ),
+                ),
+              ),
+              Container(
+                width: 128,
+                height: 128,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _glowColor.withValues(alpha: 0.35),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _glowColor.withValues(alpha: 0.3),
+                      blurRadius: 24,
+                      spreadRadius: 4,
+                    ),
+                  ],
+                ),
+              ),
+              AnimatedBuilder(
+                animation: monsterAnim,
+                builder: (_, __) => buildMonsterWidget(
+                  monster.currentEvolutionId,
+                  monster.color,
+                  size: 110,
+                  animValue: monsterAnim.value,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            didLevelUp ? 'レベルアップ！' : 'おつかれさまでした！',
+            style: TextStyle(
+              color: _glowColor,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            monster.name,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+        ],
       ),
     );
   }

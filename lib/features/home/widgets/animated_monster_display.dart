@@ -1,7 +1,9 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/evolution_tree.dart';
 import '../../../data/models/monster.dart';
+import 'monster_painter.dart';
 
 class AnimatedMonsterDisplay extends StatefulWidget {
   final Monster monster;
@@ -21,11 +23,10 @@ class _AnimatedMonsterDisplayState extends State<AnimatedMonsterDisplay>
   void initState() {
     super.initState();
     _breathCtrl = AnimationController(
-      duration: const Duration(milliseconds: 2400),
+      duration: const Duration(seconds: 3),
       vsync: this,
-    )..repeat(reverse: true);
-    _breathAnim = Tween<double>(begin: 0.97, end: 1.03).animate(
-        CurvedAnimation(parent: _breathCtrl, curve: Curves.easeInOut));
+    )..repeat();
+    _breathAnim = Tween<double>(begin: 0.0, end: math.pi * 2).animate(_breathCtrl);
   }
 
   @override
@@ -52,11 +53,7 @@ class _AnimatedMonsterDisplayState extends State<AnimatedMonsterDisplay>
       children: [
         AnimatedBuilder(
           animation: _breathAnim,
-          builder: (_, child) => Transform.scale(
-            scale: _breathAnim.value,
-            child: child,
-          ),
-          child: AnimatedSwitcher(
+          builder: (_, __) => AnimatedSwitcher(
             duration: const Duration(milliseconds: 500),
             switchInCurve: Curves.elasticOut,
             switchOutCurve: Curves.easeIn,
@@ -64,27 +61,15 @@ class _AnimatedMonsterDisplayState extends State<AnimatedMonsterDisplay>
               scale: anim,
               child: FadeTransition(opacity: anim, child: child),
             ),
-            child: Container(
+            child: SizedBox(
               key: ValueKey(widget.monster.currentEvolutionId),
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _monsterColor.withValues(alpha: 0.15),
-                border: Border.all(color: _monsterColor, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: _monsterColor.withValues(alpha: 0.25),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  node?.emoji ?? '✨',
-                  style: const TextStyle(fontSize: 64),
-                ),
+              width: 180,
+              height: 180,
+              child: buildMonsterWidget(
+                widget.monster.currentEvolutionId,
+                widget.monster.color,
+                size: 180,
+                animValue: _breathAnim.value,
               ),
             ),
           ),

@@ -1,69 +1,246 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/glow_button.dart';
+import '../../data/models/monster.dart';
 import '../../services/haptic_service.dart';
+import '../home/home_notifier.dart';
+import '../home/widgets/monster_painter.dart';
 import 'run_notifier.dart';
 import 'widgets/run_stats_panel.dart';
 import 'widgets/route_map.dart';
+
+// Star seeds — deterministic positions for the run prep screen
+final _runStarSeeds = List.generate(
+  36,
+  (i) => _RunStar(
+    x: (i * 19 + 13) % 100 / 100.0,
+    y: (i * 31 + 7) % 100 / 100.0,
+    size: ((i * 11 + 5) % 3 + 1).toDouble(),
+    opacity: ((i * 7 + 17) % 55 + 15) / 100.0,
+  ),
+);
+
+class _RunStar {
+  final double x, y, size, opacity;
+  const _RunStar({required this.x, required this.y, required this.size, required this.opacity});
+}
 
 class RunScreen extends ConsumerWidget {
   const RunScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final homeAsync = ref.watch(homeProvider);
+    final monster = homeAsync.value?.monster;
+
     return Scaffold(
       backgroundColor: AppColors.background,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('ラン',
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [AppColors.primaryLight, AppColors.accentLight],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ).createShader(bounds),
+          child: const Text(
+            'RUN',
             style: TextStyle(
-                color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 22,
+              letterSpacing: 4,
+            ),
+          ),
+        ),
+        centerTitle: false,
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const _BouncingRunnerIcon(),
-              const SizedBox(height: 32),
-              const Text('走る準備はできていますか？',
+      body: Stack(
+        children: [
+          // Star field
+          Positioned.fill(
+            child: CustomPaint(painter: _RunStarPainter()),
+          ),
+          // Gradient overlay
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [AppColors.background, AppColors.backgroundGradientEnd],
+                stops: [0.0, 1.0],
+              ),
+            ),
+          ),
+          // Content
+          SafeArea(
+            child: Column(
+              children: [
+                const Spacer(),
+                // Monster or fallback icon
+                monster != null
+                    ? _RunMonsterDisplay(monster: monster)
+                    : const _BouncingRunnerIcon(),
+                const SizedBox(height: 28),
+                // Hero text
+                const Text(
+                  '走る準備はできていますか？',
                   style: TextStyle(
-                      color: AppColors.textSecondary, fontSize: 16)),
-              const SizedBox(height: 8),
-              const Text('GPS精度のため屋外でお試しください',
-                  style: TextStyle(
-                      color: AppColors.textSecondary, fontSize: 12)),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 60,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    HapticService.runStart();
-                    context.push('/run/active');
-                  },
-                  icon: const Icon(Icons.play_arrow, size: 28),
-                  label: const Text('ランを開始',
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18)),
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
                   ),
                 ),
+                const SizedBox(height: 6),
+                const Text(
+                  'GPS精度のため屋外でお試しください',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                ),
+                const Spacer(),
+                // EXP multiplier tips
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: const _RunTips(),
+                ),
+                const SizedBox(height: 20),
+                // Premium CTA
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: GlowButton(
+                    label: 'ランを開始',
+                    icon: Icons.play_arrow,
+                    isLarge: true,
+                    color: AppColors.primary,
+                    onPressed: () {
+                      HapticService.runStart();
+                      context.push('/run/active');
+                    },
+                  ),
+                ),
+                const SizedBox(height: 36),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Run screen star painter
+// ---------------------------------------------------------------------------
+class _RunStarPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()..style = PaintingStyle.fill;
+    for (final s in _runStarSeeds) {
+      p.color = Colors.white.withValues(alpha: s.opacity);
+      canvas.drawCircle(Offset(s.x * size.width, s.y * size.height), s.size, p);
+    }
+  }
+  @override
+  bool shouldRepaint(covariant CustomPainter _) => false;
+}
+
+// ---------------------------------------------------------------------------
+// Monster display on run prep screen
+// ---------------------------------------------------------------------------
+class _RunMonsterDisplay extends StatefulWidget {
+  final Monster monster;
+  const _RunMonsterDisplay({required this.monster});
+
+  @override
+  State<_RunMonsterDisplay> createState() => _RunMonsterDisplayState();
+}
+
+class _RunMonsterDisplayState extends State<_RunMonsterDisplay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
+    _anim = Tween<double>(begin: 0.0, end: math.pi * 2).animate(_ctrl);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Color get _glowColor {
+    switch (widget.monster.color) {
+      case 'red': return AppColors.red;
+      case 'blue': return AppColors.blue;
+      default: return AppColors.green;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Radial glow
+        Container(
+          width: 200,
+          height: 200,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                _glowColor.withValues(alpha: 0.18),
+                _glowColor.withValues(alpha: 0.06),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+          ),
+        ),
+        // Pulsing ring
+        Container(
+          width: 168,
+          height: 168,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: _glowColor.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _glowColor.withValues(alpha: 0.2),
+                blurRadius: 20,
+                spreadRadius: 2,
               ),
-              const SizedBox(height: 16),
-              const _RunTips(),
             ],
           ),
         ),
-      ),
+        // Animated monster
+        AnimatedBuilder(
+          animation: _anim,
+          builder: (_, __) => buildMonsterWidget(
+            widget.monster.currentEvolutionId,
+            widget.monster.color,
+            size: 160,
+            animValue: _anim.value,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -113,7 +290,7 @@ class _BouncingRunnerIconState extends State<_BouncingRunnerIcon>
           border: Border.all(color: AppColors.primary, width: 2),
         ),
         child: const Center(
-          child: Text('🏃', style: TextStyle(fontSize: 60)),
+          child: Icon(Icons.directions_run, size: 60, color: AppColors.primary),
         ),
       ),
     );
@@ -129,13 +306,48 @@ class _RunTips extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.accent.withValues(alpha: 0.06),
+            blurRadius: 12,
+          ),
+        ],
       ),
-      child: const Column(
+      child: Column(
         children: [
-          _TipRow(icon: Icons.wb_sunny, text: '朝ラン (6〜9時): EXP×1.1'),
-          _TipRow(icon: Icons.nights_stay, text: '夜ラン (21〜24時): EXP×1.1'),
-          _TipRow(icon: Icons.directions_run, text: '10km以上: EXP×1.5'),
+          Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.accent.withValues(alpha: 0.15),
+                ),
+                child: const Icon(Icons.bolt,
+                    size: 14, color: AppColors.accent),
+              ),
+              const SizedBox(width: 8),
+              const Text('EXPボーナス',
+                  style: TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const _TipRow(icon: Icons.wb_sunny_outlined,
+              text: '朝ラン (6〜9時)',
+              bonus: '×1.1'),
+          const _TipRow(icon: Icons.nights_stay_outlined,
+              text: '夜ラン (21〜24時)',
+              bonus: '×1.1'),
+          const _TipRow(icon: Icons.route_outlined,
+              text: '10km以上',
+              bonus: '×1.5'),
         ],
       ),
     );
@@ -145,19 +357,34 @@ class _RunTips extends StatelessWidget {
 class _TipRow extends StatelessWidget {
   final IconData icon;
   final String text;
-  const _TipRow({required this.icon, required this.text});
+  final String bonus;
+  const _TipRow({required this.icon, required this.text, required this.bonus});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.accent),
+          Icon(icon, size: 15, color: AppColors.textSecondary),
           const SizedBox(width: 8),
-          Text(text,
-              style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 12)),
+          Expanded(
+            child: Text(text,
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 12)),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(bonus,
+                style: const TextStyle(
+                    color: AppColors.accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
@@ -173,13 +400,25 @@ class RunActiveScreen extends ConsumerStatefulWidget {
   ConsumerState<RunActiveScreen> createState() => _RunActiveScreenState();
 }
 
-class _RunActiveScreenState extends ConsumerState<RunActiveScreen> {
+class _RunActiveScreenState extends ConsumerState<RunActiveScreen>
+    with SingleTickerProviderStateMixin {
   bool _started = false;
+  late AnimationController _monsterCtrl;
+  late Animation<double> _monsterAnim;
 
   @override
   void initState() {
     super.initState();
+    _monsterCtrl = AnimationController(
+        duration: const Duration(seconds: 3), vsync: this)..repeat();
+    _monsterAnim = Tween<double>(begin: 0.0, end: math.pi * 2).animate(_monsterCtrl);
     WidgetsBinding.instance.addPostFrameCallback((_) => _begin());
+  }
+
+  @override
+  void dispose() {
+    _monsterCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _begin() async {
@@ -284,25 +523,36 @@ class _RunActiveScreenState extends ConsumerState<RunActiveScreen> {
     final status = ref.watch(runProvider.select((s) => s.status));
     final gpsAcquired = ref.watch(runProvider.select((s) => s.gpsAcquired));
     final isPaused = status == RunStatus.paused;
+    final monster = ref.watch(homeProvider).valueOrNull?.monster;
+
+    final statusColor = isPaused
+        ? AppColors.accent
+        : (gpsAcquired ? AppColors.primary : Colors.orange);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            // Header bar
+            // Header bar with GPS status + mini monster
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
+                  // Status dot
                   Container(
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isPaused
-                          ? AppColors.accent
-                          : (gpsAcquired ? AppColors.primary : Colors.orange),
+                      color: statusColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: statusColor.withValues(alpha: 0.5),
+                          blurRadius: 6,
+                          spreadRadius: 1,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -311,13 +561,37 @@ class _RunActiveScreenState extends ConsumerState<RunActiveScreen> {
                         ? '一時停止中'
                         : (gpsAcquired ? '記録中...' : 'GPS取得中...'),
                     style: TextStyle(
-                      color: isPaused
-                          ? AppColors.accent
-                          : (gpsAcquired ? AppColors.primary : Colors.orange),
+                      color: statusColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
                   ),
+                  const Spacer(),
+                  // Mini monster in header
+                  if (monster != null)
+                    AnimatedBuilder(
+                      animation: _monsterAnim,
+                      builder: (_, __) => Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.surface,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: buildMonsterWidget(
+                          monster.currentEvolutionId,
+                          monster.color,
+                          size: 36,
+                          animValue: _monsterAnim.value,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

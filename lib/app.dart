@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/router/app_router.dart';
+import 'core/design/app_theme.dart';
 
 class App extends ConsumerWidget {
   const App({super.key});
@@ -10,14 +11,7 @@ class App extends ConsumerWidget {
     return MaterialApp.router(
       title: 'ランニングモンスター',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4CAF50),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-        fontFamily: 'sans-serif',
-      ),
+      theme: AppTheme.dark,
       routerConfig: appRouter,
     );
   }

@@ -7,6 +7,8 @@ import '../../services/haptic_service.dart';
 import '../../data/models/monster.dart';
 import '../../data/models/gacha_item.dart';
 import '../home/home_notifier.dart';
+import '../home/widgets/animated_monster_display.dart';
+import '../home/widgets/monster_painter.dart';
 
 class MonsterScreen extends ConsumerStatefulWidget {
   const MonsterScreen({super.key});
@@ -103,34 +105,56 @@ class _StatusTab extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 16),
-          // Monster avatar
-          Container(
-            width: 160,
-            height: 160,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.surfaceLight.withValues(alpha: 0.5),
-              border: Border.all(color: AppColors.primary, width: 3),
-            ),
-            child: Center(
-              child: Text(
-                node?.emoji ?? '✨',
-                style: const TextStyle(fontSize: 80),
+          // Full animated monster display with glow ring
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppColors.primary.withValues(alpha: 0.15),
+                      AppColors.primary.withValues(alpha: 0.04),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            node?.name ?? monster.currentEvolutionId,
-            style: const TextStyle(
-                color: AppColors.textSecondary, fontSize: 13),
+              Container(
+                width: 185,
+                height: 185,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.primaryGlow.withValues(alpha: 0.25),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                      blurRadius: 24,
+                      spreadRadius: 4,
+                    ),
+                  ],
+                ),
+              ),
+              AnimatedMonsterDisplay(monster: monster),
+            ],
           ),
           if (node?.description != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              node!.description,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                node!.description,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 12),
+              ),
             ),
           ],
           const SizedBox(height: 24),
@@ -138,27 +162,6 @@ class _StatusTab extends StatelessWidget {
               color: AppColors.accent),
           _StatRow(label: '累計EXP', value: '${monster.exp} EXP',
               color: AppColors.expBar),
-          if (monster.isEvolutionAvailable)
-            Container(
-              margin: const EdgeInsets.only(top: 16),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.accent),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.auto_awesome, color: AppColors.accent, size: 18),
-                  SizedBox(width: 8),
-                  Text('進化できます！「進化」タブへ',
-                      style: TextStyle(
-                          color: AppColors.accent,
-                          fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -214,6 +217,7 @@ class _EvolutionTab extends ConsumerWidget {
           // Current form
           _EvolutionNodeCard(
             node: kEvolutionTree[monster.currentEvolutionId]!,
+            monsterColor: monster.color,
             isCurrent: true,
             isUnlocked: true,
           ),
@@ -234,6 +238,7 @@ class _EvolutionTab extends ConsumerWidget {
             for (final choice in choices)
               _EvolutionChoiceCard(
                 node: choice,
+                monsterColor: monster.color,
                 canEvolve: canEvolve,
                 onEvolve: () => _confirmEvolve(context, ref, choice),
               ),
@@ -267,7 +272,7 @@ class _EvolutionTab extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('${choice.emoji} ${choice.name}に進化',
+        title: Text('${choice.name}に進化',
             style: const TextStyle(color: AppColors.textPrimary)),
         content: Text(
           '${choice.description}\n\nこの進化は取り消せません。よろしいですか？',
@@ -306,7 +311,7 @@ class _EvolutionTab extends ConsumerWidget {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${choice.emoji} ${choice.name}に進化しました！'),
+          content: Text('${choice.name}に進化しました！'),
           backgroundColor: AppColors.primary,
         ),
       );
@@ -316,11 +321,13 @@ class _EvolutionTab extends ConsumerWidget {
 
 class _EvolutionNodeCard extends StatelessWidget {
   final EvolutionNode node;
+  final String monsterColor;
   final bool isCurrent;
   final bool isUnlocked;
 
   const _EvolutionNodeCard({
     required this.node,
+    required this.monsterColor,
     this.isCurrent = false,
     this.isUnlocked = false,
   });
@@ -331,17 +338,27 @@ class _EvolutionNodeCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isCurrent
-            ? AppColors.primary.withValues(alpha: 0.15)
+            ? AppColors.primary.withValues(alpha: 0.12)
             : AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCurrent ? AppColors.primary : AppColors.surfaceLight,
           width: isCurrent ? 2 : 1,
         ),
+        boxShadow: isCurrent ? [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.15),
+            blurRadius: 12,
+          ),
+        ] : null,
       ),
       child: Row(
         children: [
-          Text(node.emoji, style: const TextStyle(fontSize: 36)),
+          SizedBox(
+            width: 52,
+            height: 52,
+            child: buildMonsterWidget(node.id, monsterColor, size: 52),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -387,11 +404,13 @@ class _EvolutionNodeCard extends StatelessWidget {
 
 class _EvolutionChoiceCard extends StatelessWidget {
   final EvolutionNode node;
+  final String monsterColor;
   final bool canEvolve;
   final VoidCallback onEvolve;
 
   const _EvolutionChoiceCard({
     required this.node,
+    required this.monsterColor,
     required this.canEvolve,
     required this.onEvolve,
   });
@@ -405,11 +424,24 @@ class _EvolutionChoiceCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: canEvolve ? AppColors.accent : AppColors.surfaceLight),
+          color: canEvolve
+              ? AppColors.accent.withValues(alpha: 0.6)
+              : AppColors.surfaceLight,
+        ),
+        boxShadow: canEvolve ? [
+          BoxShadow(
+            color: AppColors.accent.withValues(alpha: 0.12),
+            blurRadius: 12,
+          ),
+        ] : null,
       ),
       child: Row(
         children: [
-          Text(node.emoji, style: const TextStyle(fontSize: 36)),
+          SizedBox(
+            width: 52,
+            height: 52,
+            child: buildMonsterWidget(node.id, monsterColor, size: 52),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -457,7 +489,7 @@ class _EvolutionPathDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     final stages = ['ランモン', ...evolutionPath.map((id) {
       final n = kEvolutionTree[id];
-      return n != null ? '${n.emoji} ${n.name}' : id;
+      return n != null ? n.name : id;
     })];
 
     return Container(

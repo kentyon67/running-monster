@@ -161,74 +161,105 @@ class _MissionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final done = mission.isCompleted;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: mission.isCompleted
-              ? AppColors.primary.withValues(alpha: 0.4)
+          color: done
+              ? AppColors.primary.withValues(alpha: 0.5)
               : AppColors.surfaceLight,
+          width: done ? 1.5 : 1.0,
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: mission.isCompleted
-                  ? AppColors.primary.withValues(alpha: 0.2)
-                  : AppColors.surfaceLight.withValues(alpha: 0.3),
-            ),
-            child: Icon(
-              mission.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: mission.isCompleted ? AppColors.primary : AppColors.textSecondary,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  mission.title,
-                  style: TextStyle(
-                    color: mission.isCompleted
-                        ? AppColors.textSecondary
-                        : AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    decoration: mission.isCompleted
-                        ? TextDecoration.lineThrough
-                        : null,
-                  ),
+        boxShadow: done
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  blurRadius: 12,
                 ),
-                const SizedBox(height: 4),
-                Row(
+              ]
+            : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(13),
+        child: Row(
+          children: [
+            // Left accent bar
+            Container(
+              width: 4,
+              height: 72,
+              color: done ? AppColors.primary : AppColors.surfaceLight,
+            ),
+            const SizedBox(width: 12),
+            // Icon
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: done
+                    ? AppColors.primary.withValues(alpha: 0.15)
+                    : AppColors.surfaceLight.withValues(alpha: 0.5),
+              ),
+              child: Icon(
+                done ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+                color: done ? AppColors.primary : AppColors.textMuted,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Text
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.monetization_on,
-                        color: AppColors.gold, size: 14),
-                    const SizedBox(width: 4),
-                    Text('+${mission.rewardCoins} コイン',
-                        style: const TextStyle(
-                            color: AppColors.gold, fontSize: 12)),
+                    Text(
+                      mission.title,
+                      style: TextStyle(
+                        color: done ? AppColors.textSecondary : AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        decoration: done ? TextDecoration.lineThrough : null,
+                        decorationColor: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.monetization_on,
+                            color: AppColors.gold, size: 13),
+                        const SizedBox(width: 3),
+                        Text('+${mission.rewardCoins} コイン',
+                            style: const TextStyle(
+                                color: AppColors.gold, fontSize: 12)),
+                      ],
+                    ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-          if (mission.isCompleted)
-            const Text('完了',
-                style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12)),
-        ],
+            // Done badge
+            if (done)
+              Container(
+                margin: const EdgeInsets.only(right: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+                ),
+                child: const Text('完了',
+                    style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11)),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -285,58 +316,97 @@ class _AchievementCard extends StatelessWidget {
     final done = achievement.isCompleted;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: done
-            ? AppColors.primary.withValues(alpha: 0.1)
-            : AppColors.surface,
+        gradient: done
+            ? LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  AppColors.gold.withValues(alpha: 0.08),
+                  AppColors.surface,
+                ],
+              )
+            : null,
+        color: done ? null : AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: done
-              ? AppColors.primary.withValues(alpha: 0.4)
+              ? AppColors.gold.withValues(alpha: 0.4)
               : AppColors.surfaceLight,
         ),
+        boxShadow: done
+            ? [
+                BoxShadow(
+                  color: AppColors.gold.withValues(alpha: 0.12),
+                  blurRadius: 10,
+                ),
+              ]
+            : null,
       ),
-      child: Row(
-        children: [
-          Text(done ? '🏆' : '🔒',
-              style: const TextStyle(fontSize: 28)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(achievement.title,
-                    style: TextStyle(
-                      color: done
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    )),
-                Text(achievement.description,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: done
+                    ? AppColors.gold.withValues(alpha: 0.15)
+                    : AppColors.surfaceLight.withValues(alpha: 0.5),
+              ),
+              child: Icon(
+                done ? Icons.emoji_events_rounded : Icons.lock_outline,
+                size: 24,
+                color: done ? AppColors.gold : AppColors.textMuted,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(achievement.title,
+                      style: TextStyle(
+                        color: done
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      )),
+                  const SizedBox(height: 2),
+                  Text(achievement.description,
+                      style: const TextStyle(
+                          color: AppColors.textSecondary, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  _RewardBadge(
+                      type: achievement.rewardType,
+                      value: achievement.rewardValue),
+                ],
+              ),
+            ),
+            if (done && achievement.completedAt != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Icon(Icons.check_circle,
+                      color: AppColors.gold, size: 16),
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatDate(achievement.completedAt!),
                     style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 12)),
-                const SizedBox(height: 4),
-                _RewardBadge(
-                    type: achievement.rewardType,
-                    value: achievement.rewardValue),
-              ],
-            ),
-          ),
-          if (done && achievement.completedAt != null)
-            Text(
-              _formatDate(achievement.completedAt!),
-              style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 10),
-            ),
-        ],
+                        color: AppColors.textSecondary, fontSize: 10),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  String _formatDate(DateTime d) =>
-      '${d.month}/${d.day}';
+  String _formatDate(DateTime d) => '${d.month}/${d.day}';
 }
 
 class _RewardBadge extends StatelessWidget {
@@ -352,7 +422,7 @@ class _RewardBadge extends StatelessWidget {
       label = '+$value コイン';
       color = AppColors.gold;
     } else {
-      label = '${_typeIcon(type)} $type 獲得';
+      label = '$type 獲得';
       color = AppColors.accent;
     }
     return Row(
@@ -366,20 +436,5 @@ class _RewardBadge extends StatelessWidget {
         Text(label, style: TextStyle(color: color, fontSize: 11)),
       ],
     );
-  }
-
-  String _typeIcon(String t) {
-    switch (t) {
-      case 'aura':
-        return '✨';
-      case 'banner':
-        return '🏳';
-      case 'frame':
-        return '🖼️';
-      case 'skin':
-        return '🎨';
-      default:
-        return '🎁';
-    }
   }
 }

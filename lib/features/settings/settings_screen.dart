@@ -1,11 +1,14 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/repositories/providers.dart';
 import '../../data/models/monster.dart';
+import '../../data/models/user.dart';
 import '../../services/notification_service.dart';
 import '../home/home_notifier.dart';
+import '../home/widgets/monster_painter.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -27,6 +30,9 @@ class SettingsScreen extends ConsumerWidget {
       ),
       body: ListView(
         children: [
+          // Profile header
+          if (user != null && monster != null)
+            _ProfileHeader(user: user, monster: monster),
           _Section(title: 'アカウント', children: [
             _Item(
               icon: Icons.person,
@@ -37,7 +43,7 @@ class SettingsScreen extends ConsumerWidget {
                   : () => _showUsernameDialog(context, ref, user.username),
             ),
             _Item(
-              icon: Icons.catching_pokemon,
+              icon: Icons.pets,
               label: 'モンスター名変更',
               subtitle: monster == null
                   ? '—'
@@ -374,6 +380,152 @@ class _Item extends StatelessWidget {
           ? const Icon(Icons.chevron_right, color: AppColors.textSecondary)
           : null,
       onTap: onTap,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Settings profile header
+// ---------------------------------------------------------------------------
+class _ProfileHeader extends StatefulWidget {
+  final User user;
+  final Monster monster;
+  const _ProfileHeader({required this.user, required this.monster});
+
+  @override
+  State<_ProfileHeader> createState() => _ProfileHeaderState();
+}
+
+class _ProfileHeaderState extends State<_ProfileHeader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
+    _anim = Tween<double>(begin: 0.0, end: math.pi * 2).animate(_ctrl);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Color get _monsterColor {
+    switch (widget.monster.color) {
+      case 'red': return AppColors.red;
+      case 'blue': return AppColors.blue;
+      default: return AppColors.green;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _monsterColor;
+    return GestureDetector(
+      onTap: () => context.push('/profile'),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 16, 12, 4),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.12),
+              blurRadius: 16,
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Monster art
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color.withValues(alpha: 0.08),
+                border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: AnimatedBuilder(
+                animation: _anim,
+                builder: (_, __) => buildMonsterWidget(
+                  widget.monster.currentEvolutionId,
+                  widget.monster.color,
+                  size: 72,
+                  animValue: _anim.value,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.user.username,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.monster.name,
+                    style: TextStyle(color: color, fontSize: 13),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: color.withValues(alpha: 0.4)),
+                    ),
+                    child: Text(
+                      'Lv ${widget.monster.level}',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Profile card shortcut
+            Column(
+              children: [
+                const Icon(Icons.qr_code, color: AppColors.textSecondary, size: 20),
+                const SizedBox(height: 4),
+                const Text(
+                  'QR',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 10),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

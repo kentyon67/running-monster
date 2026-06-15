@@ -1,7 +1,9 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/local/hive_boxes.dart';
+import '../home/widgets/monster_painter.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -16,25 +18,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   static const _pages = [
     _PageData(
-      emoji: '🏃',
+      icon: Icons.directions_run,
       title: 'ランニングモンスター',
       subtitle: 'へようこそ！',
       description: '走れば走るほどモンスターが成長する\nGPSランニングアプリです。\n毎日の走りがゲームになります！',
       color: AppColors.primary,
     ),
     _PageData(
-      emoji: '⭐',
+      icon: Icons.star,
       title: 'EXPとコインを獲得',
       subtitle: '走るたびに報酬GET',
       description: '1km走るごとにEXP・コインを獲得。\n距離が長いほど倍率アップ！\n朝・夜ランはボーナスタイムです。',
       color: AppColors.accent,
     ),
     _PageData(
-      emoji: '🐉',
+      icon: Icons.auto_awesome,
       title: 'モンスターを育てよう',
       subtitle: '進化・ガチャ・フレンド',
       description: 'レベルアップで進化を選択。\nガチャでアイテムを集め、\nフレンドのプロフィールをQRコードで共有しよう！',
       color: AppColors.blue,
+      showMonster: true,
     ),
   ];
 
@@ -147,10 +150,12 @@ class _OnboardingPage extends StatefulWidget {
 }
 
 class _OnboardingPageState extends State<_OnboardingPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _anim;
   late Animation<double> _scale;
   late Animation<double> _fade;
+  late AnimationController _monsterCtrl;
+  late Animation<double> _monsterAnim;
 
   @override
   void initState() {
@@ -162,11 +167,18 @@ class _OnboardingPageState extends State<_OnboardingPage>
     _fade = Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(parent: _anim, curve: Curves.easeIn));
     _anim.forward();
+    _monsterCtrl = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
+    _monsterAnim = Tween<double>(begin: 0.0, end: math.pi * 2)
+        .animate(_monsterCtrl);
   }
 
   @override
   void dispose() {
     _anim.dispose();
+    _monsterCtrl.dispose();
     super.dispose();
   }
 
@@ -181,20 +193,47 @@ class _OnboardingPageState extends State<_OnboardingPage>
           children: [
             ScaleTransition(
               scale: _scale,
-              child: Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: widget.data.color.withValues(alpha: 0.15),
-                  border:
-                      Border.all(color: widget.data.color, width: 3),
-                ),
-                child: Center(
-                  child: Text(widget.data.emoji,
-                      style: const TextStyle(fontSize: 72)),
-                ),
-              ),
+              child: widget.data.showMonster
+                  ? Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 160,
+                          height: 160,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                widget.data.color.withValues(alpha: 0.18),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                        ),
+                        AnimatedBuilder(
+                          animation: _monsterAnim,
+                          builder: (_, __) => buildMonsterWidget(
+                            'spiritmon',
+                            'green',
+                            size: 140,
+                            animValue: _monsterAnim.value,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: widget.data.color.withValues(alpha: 0.15),
+                        border: Border.all(color: widget.data.color, width: 3),
+                      ),
+                      child: Center(
+                        child: Icon(widget.data.icon,
+                            size: 72, color: widget.data.color),
+                      ),
+                    ),
             ),
             const SizedBox(height: 40),
             Text(
@@ -234,17 +273,19 @@ class _OnboardingPageState extends State<_OnboardingPage>
 }
 
 class _PageData {
-  final String emoji;
+  final IconData icon;
   final String title;
   final String subtitle;
   final String description;
   final Color color;
+  final bool showMonster;
 
   const _PageData({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.description,
     required this.color,
+    this.showMonster = false,
   });
 }

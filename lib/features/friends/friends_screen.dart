@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/evolution_tree.dart';
 import '../../data/models/friend_card.dart';
 import '../../data/repositories/providers.dart';
+import '../home/widgets/monster_painter.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
   const FriendsScreen({super.key});
@@ -239,17 +239,21 @@ class _FriendTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final node = kEvolutionTree[card.monsterImageId];
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.surfaceBorder.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
-          Text(node?.emoji ?? '✨', style: const TextStyle(fontSize: 32)),
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: buildMonsterWidget(card.monsterImageId, _colorFromId(card.monsterImageId), size: 48),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -340,7 +344,6 @@ class _RankingTabState extends State<_RankingTab> {
                 final dist = _byWeekly
                     ? c.weeklyDistanceKm
                     : c.totalDistanceKm;
-                final node = kEvolutionTree[c.monsterImageId];
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
@@ -355,26 +358,31 @@ class _RankingTabState extends State<_RankingTab> {
                     children: [
                       SizedBox(
                         width: 28,
-                        child: Text(
-                          i == 0
-                              ? '🥇'
-                              : i == 1
-                                  ? '🥈'
-                                  : i == 2
-                                      ? '🥉'
-                                      : '${i + 1}',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontWeight: i < 3
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                        child: i < 3
+                            ? Icon(
+                                Icons.emoji_events,
+                                size: 20,
+                                color: i == 0
+                                    ? AppColors.gold
+                                    : i == 1
+                                        ? const Color(0xFFC0C0C0)
+                                        : const Color(0xFFCD7F32),
+                              )
+                            : Text(
+                                '${i + 1}',
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                       ),
                       const SizedBox(width: 8),
-                      Text(node?.emoji ?? '✨',
-                          style: const TextStyle(fontSize: 24)),
+                      SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: buildMonsterWidget(c.monsterImageId, _colorFromId(c.monsterImageId), size: 36),
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(c.username,
@@ -471,4 +479,12 @@ class _QrScanSheetState extends State<_QrScanSheet> {
       ),
     );
   }
+}
+
+// Derive monster color string from evolutionId for buildMonsterWidget
+String _colorFromId(String id) {
+  if (id.contains('red') || id == 'beastmon' || id == 'lionmon' ||
+      id == 'dragonmon' || id == 'shadowmon') return 'red';
+  if (id.contains('blue') || id == 'wolfmon' || id == 'phoenixmon') return 'blue';
+  return 'green';
 }

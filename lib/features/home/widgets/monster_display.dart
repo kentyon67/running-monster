@@ -32,9 +32,10 @@ class MonsterDisplay extends StatelessWidget {
             border: Border.all(color: _monsterColor, width: 3),
           ),
           child: Center(
-            child: Text(
-              _emojiForEvolution(monster.currentEvolutionId),
-              style: const TextStyle(fontSize: 64),
+            child: Icon(
+              _iconForEvolution(monster.currentEvolutionId),
+              size: 64,
+              color: _monsterColor,
             ),
           ),
         ),
@@ -58,14 +59,14 @@ class MonsterDisplay extends StatelessWidget {
     );
   }
 
-  String _emojiForEvolution(String id) {
-    if (id.startsWith('runmon')) return '🐣';
-    if (id.startsWith('grandmon') || id.startsWith('wingmon')) return '🐥';
+  IconData _iconForEvolution(String id) {
+    if (id.startsWith('runmon')) return Icons.catching_pokemon;
+    if (id.startsWith('grandmon') || id.startsWith('wingmon')) return Icons.catching_pokemon;
     if (id.startsWith('beast') || id.startsWith('knight') || id.startsWith('bird') || id.startsWith('spiri')) {
-      return '🐦';
+      return Icons.catching_pokemon;
     }
-    if (id.contains('fenrir') || id.contains('leo')) return '🦁';
-    if (id.contains('phoenix') || id.contains('bird')) return '🦅';
-    return '✨';
+    if (id.contains('fenrir') || id.contains('leo')) return Icons.pets;
+    if (id.contains('phoenix') || id.contains('bird')) return Icons.flight;
+    return Icons.auto_awesome;
   }
 }

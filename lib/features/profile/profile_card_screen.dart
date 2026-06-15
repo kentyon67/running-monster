@@ -13,6 +13,7 @@ import '../../core/constants/evolution_tree.dart';
 import '../../data/models/user.dart';
 import '../../data/models/monster.dart';
 import '../home/home_notifier.dart';
+import '../home/widgets/monster_painter.dart';
 
 class ProfileCardScreen extends ConsumerStatefulWidget {
   const ProfileCardScreen({super.key});
@@ -175,90 +176,198 @@ class _ProfileCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surface,
-            monsterColor.withValues(alpha: 0.2),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: monsterColor.withValues(alpha: 0.5), width: 2),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: monsterColor.withValues(alpha: 0.3),
-            blurRadius: 20,
+            color: monsterColor.withValues(alpha: 0.4),
+            blurRadius: 32,
             spreadRadius: 2,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              // Monster emoji
-              Container(
-                width: 70,
-                height: 70,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            // Full card dark background
+            Container(color: const Color(0xFF0D1117)),
+            // Colored gradient header area
+            Positioned(
+              top: 0, left: 0, right: 0,
+              child: Container(
+                height: 180,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: monsterColor.withValues(alpha: 0.15),
-                  border: Border.all(color: monsterColor, width: 2),
-                ),
-                child: Center(
-                  child: Text(node?.emoji ?? '✨',
-                      style: const TextStyle(fontSize: 36)),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(user.username,
-                        style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold)),
-                    Text(monster.name,
-                        style: TextStyle(color: monsterColor, fontSize: 14)),
-                    Text('Lv ${monster.level} · ${node?.name ?? ""}',
-                        style: const TextStyle(
-                            color: AppColors.textSecondary, fontSize: 12)),
-                  ],
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      monsterColor.withValues(alpha: 0.6),
+                      monsterColor.withValues(alpha: 0.15),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.6, 1.0],
+                  ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(color: AppColors.surfaceLight),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _CardStat(
-                  label: '累計距離',
-                  value: '${user.totalDistanceKm.toStringAsFixed(1)} km'),
-              _CardStat(
-                  label: '週間距離',
-                  value: '${user.weeklyDistanceKm.toStringAsFixed(1)} km'),
-              _CardStat(label: 'コイン', value: '${user.currentCoins}'),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text('ランニングモンスター',
-                  style: TextStyle(
-                      color: AppColors.textSecondary, fontSize: 10)),
-            ],
-          ),
-        ],
+            ),
+            // Card content
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top row: RUNMON brand + level badge
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      ShaderMask(
+                        shaderCallback: (b) => LinearGradient(
+                          colors: [monsterColor, AppColors.accentLight],
+                        ).createShader(b),
+                        child: const Text(
+                          'RUNMON',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            letterSpacing: 3,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: monsterColor.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: monsterColor.withValues(alpha: 0.6)),
+                        ),
+                        child: Text(
+                          'Lv ${monster.level}',
+                          style: TextStyle(
+                            color: monsterColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Monster art + name
+                  Row(
+                    children: [
+                      Container(
+                        width: 110,
+                        height: 110,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: monsterColor.withValues(alpha: 0.08),
+                          border: Border.all(
+                            color: monsterColor.withValues(alpha: 0.4),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: monsterColor.withValues(alpha: 0.25),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: buildMonsterWidget(
+                          monster.currentEvolutionId,
+                          monster.color,
+                          size: 110,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.username,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              monster.name,
+                              style: TextStyle(
+                                color: monsterColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              node?.name ?? monster.currentEvolutionId,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Divider
+                  Container(height: 1, color: AppColors.surfaceLight),
+                  const SizedBox(height: 16),
+                  // Stats row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _CardStat(
+                        label: '累計距離',
+                        value: '${user.totalDistanceKm.toStringAsFixed(1)}',
+                        unit: 'km',
+                        color: AppColors.info,
+                      ),
+                      Container(width: 1, height: 36, color: AppColors.surfaceLight),
+                      _CardStat(
+                        label: '週間距離',
+                        value: '${user.weeklyDistanceKm.toStringAsFixed(1)}',
+                        unit: 'km',
+                        color: AppColors.success,
+                      ),
+                      Container(width: 1, height: 36, color: AppColors.surfaceLight),
+                      _CardStat(
+                        label: 'コイン',
+                        value: '${user.currentCoins}',
+                        unit: 'G',
+                        color: AppColors.gold,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  // Footer branding
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        'ランニングモンスター',
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 9,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -278,20 +387,44 @@ class _ProfileCard extends StatelessWidget {
 class _CardStat extends StatelessWidget {
   final String label;
   final String value;
-  const _CardStat({required this.label, required this.value});
+  final String unit;
+  final Color color;
+  const _CardStat({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value,
-            style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 16)),
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: value,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              TextSpan(
+                text: ' $unit',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 2),
         Text(label,
             style: const TextStyle(
-                color: AppColors.textSecondary, fontSize: 11)),
+                color: AppColors.textMuted, fontSize: 10)),
       ],
     );
   }
