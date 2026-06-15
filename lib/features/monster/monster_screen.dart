@@ -8,6 +8,7 @@ import '../../data/models/monster.dart';
 import '../../data/models/gacha_item.dart';
 import '../home/home_notifier.dart';
 import '../home/widgets/animated_monster_display.dart';
+import '../home/widgets/exp_bar.dart';
 import '../home/widgets/monster_painter.dart';
 
 class MonsterScreen extends ConsumerStatefulWidget {
@@ -146,22 +147,69 @@ class _StatusTab extends StatelessWidget {
             ],
           ),
           if (node?.description != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 node!.description,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 12),
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
             ),
           ],
-          const SizedBox(height: 24),
-          _StatRow(label: 'レベル', value: 'Lv ${monster.level}',
-              color: AppColors.accent),
-          _StatRow(label: '累計EXP', value: '${monster.exp} EXP',
-              color: AppColors.expBar),
+          const SizedBox(height: 20),
+          // EXP progress card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.expBar.withValues(alpha: 0.35)),
+              boxShadow: [
+                BoxShadow(color: AppColors.expBar.withValues(alpha: 0.12), blurRadius: 12),
+              ],
+            ),
+            child: ExpBar(totalExp: monster.exp, level: monster.level),
+          ),
+          const SizedBox(height: 12),
+          // Monster color badge
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.surfaceBorder),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('タイプ', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: monster.color == 'red'
+                            ? AppColors.red
+                            : monster.color == 'blue'
+                                ? AppColors.blue
+                                : AppColors.green,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      monster.color == 'red' ? '赤タイプ' : monster.color == 'blue' ? '青タイプ' : '緑タイプ',
+                      style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          _StatRow(label: '累計EXP', value: '${monster.exp} EXP', color: AppColors.expBar),
         ],
       ),
     );

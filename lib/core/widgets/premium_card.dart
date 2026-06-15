@@ -29,7 +29,7 @@ class PremiumCard extends StatelessWidget {
 
     final container = Container(
       decoration: BoxDecoration(
-        color: gradient == null ? const Color(0xFF0D1117) : null,
+        color: gradient == null ? AppColors.surface : null,
         gradient: gradient,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(

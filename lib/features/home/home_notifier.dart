@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/utils/streak_calculator.dart';
 import '../../data/models/monster.dart';
 import '../../data/models/user.dart';
 import '../../data/repositories/providers.dart';
@@ -11,12 +12,14 @@ class HomeState {
   final Monster? monster;
   final double todayDistanceKm;
   final bool isLoading;
+  final int streak;
 
   const HomeState({
     this.user,
     this.monster,
     this.todayDistanceKm = 0,
     this.isLoading = true,
+    this.streak = 0,
   });
 
   HomeState copyWith({
@@ -24,12 +27,14 @@ class HomeState {
     Monster? monster,
     double? todayDistanceKm,
     bool? isLoading,
+    int? streak,
   }) =>
       HomeState(
         user: user ?? this.user,
         monster: monster ?? this.monster,
         todayDistanceKm: todayDistanceKm ?? this.todayDistanceKm,
         isLoading: isLoading ?? this.isLoading,
+        streak: streak ?? this.streak,
       );
 }
 
@@ -48,6 +53,7 @@ class HomeNotifier extends AsyncNotifier<HomeState> {
       user: user,
       monster: monster,
       todayDistanceKm: _runRepo.todayDistanceKm(),
+      streak: StreakCalculator.calculate(_runRepo.all),
       isLoading: false,
     );
   }

@@ -15,10 +15,10 @@ import 'widgets/exp_bar.dart';
 import 'widgets/monster_painter.dart';
 
 // ---------------------------------------------------------------------------
-// Star particle data — fixed at class level so they don't re-randomise on rebuild
+// Star particle data — fixed positions so they don't re-randomise on rebuild
 // ---------------------------------------------------------------------------
 final _starSeeds = List.generate(
-  48,
+  56,
   (i) => _StarSeed(
     x: (i * 17 + 31) % 100 / 100.0,
     y: (i * 23 + 7) % 100 / 100.0,
@@ -32,11 +32,7 @@ class _StarSeed {
   final double y;
   final double size;
   final double opacity;
-  const _StarSeed(
-      {required this.x,
-      required this.y,
-      required this.size,
-      required this.opacity});
+  const _StarSeed({required this.x, required this.y, required this.size, required this.opacity});
 }
 
 // ---------------------------------------------------------------------------
@@ -52,9 +48,7 @@ class HomeScreen extends ConsumerWidget {
     return asyncState.when(
       loading: () => const Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(
-            child:
-                CircularProgressIndicator(color: AppColors.primary)),
+        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
       ),
       error: (e, _) => Scaffold(
         backgroundColor: AppColors.background,
@@ -64,24 +58,15 @@ class HomeScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline,
-                    color: AppColors.danger, size: 48),
+                const Icon(Icons.error_outline, color: AppColors.danger, size: 48),
                 const SizedBox(height: 16),
                 const Text(
                   'データの読み込みに失敗しました',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '$e',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 12),
-                ),
+                Text('$e', textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: () => ref.invalidate(homeProvider),
@@ -96,8 +81,7 @@ class HomeScreen extends ConsumerWidget {
       data: (state) {
         if (state.monster == null) {
           return _MonsterSelectScreen(
-            onSelect: (color) =>
-                ref.read(homeProvider.notifier).createMonster(color),
+            onSelect: (color) => ref.read(homeProvider.notifier).createMonster(color),
           );
         }
 
@@ -110,67 +94,60 @@ class HomeScreen extends ConsumerWidget {
           appBar: _PremiumAppBar(coins: user.currentCoins),
           body: Stack(
             children: [
-              // -- Starfield background
-              const _StarfieldBackground(),
-              // -- Gradient overlay
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.background,
-                      AppColors.backgroundGradientEnd,
-                    ],
-                    stops: [0.0, 1.0],
-                  ),
-                ),
-              ),
-              // -- Main content
+              // Nebula + star background
+              const _NebulaBackground(),
+              // Main content
               RefreshIndicator(
                 color: AppColors.primary,
                 backgroundColor: AppColors.surface,
-                onRefresh: () =>
-                    ref.read(homeProvider.notifier).refresh(),
+                onRefresh: () => ref.read(homeProvider.notifier).refresh(),
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Space for AppBar
                         const SizedBox(height: 104),
+
+                        // Time-based greeting
+                        _GreetingRow(username: user.username),
+                        const SizedBox(height: 12),
 
                         // Evolution banner
                         if (monster.isEvolutionAvailable) ...[
-                          _EvolutionBanner(
-                              onTap: () => context.go('/monster')),
+                          _EvolutionBanner(onTap: () => context.go('/monster')),
                           const SizedBox(height: 16),
                         ],
 
-                        // Monster display area with radial glow
+                        // Monster display
                         _MonsterArea(monster: monster),
                         const SizedBox(height: 20),
 
-                        // EXP bar with glow
-                        _GlowingExpBar(
-                            totalExp: monster.exp,
-                            level: monster.level),
-                        const SizedBox(height: 20),
+                        // EXP bar
+                        _GlowingExpBar(totalExp: monster.exp, level: monster.level),
+                        const SizedBox(height: 14),
 
-                        // Stat chips row
+                        // Stat chips row (today / total / coins)
                         _StatChipsRow(
                           todayDistanceKm: state.todayDistanceKm,
                           totalDistanceKm: user.totalDistanceKm,
                           currentCoins: user.currentCoins,
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 10),
 
-                        // Daily missions card
+                        // Streak + weekly goal combined card
+                        _WeeklyGoalCard(
+                          weeklyKm: user.weeklyDistanceKm,
+                          streak: state.streak,
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Daily missions
                         const _DailyMissionsCard(),
                         const SizedBox(height: 28),
 
-                        // Run CTA button
+                        // Run CTA
                         GlowButton(
                           label: '走る',
                           icon: Icons.directions_run,
@@ -196,6 +173,261 @@ class HomeScreen extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Time-based greeting row
+// ---------------------------------------------------------------------------
+class _GreetingRow extends StatelessWidget {
+  final String username;
+  const _GreetingRow({required this.username});
+
+  String get _greeting {
+    final h = DateTime.now().hour;
+    if (h >= 5 && h < 10) return 'おはようございます';
+    if (h >= 10 && h < 17) return 'こんにちは';
+    if (h >= 17 && h < 21) return 'こんばんは';
+    return 'おつかれさまです';
+  }
+
+  String get _subtext {
+    final h = DateTime.now().hour;
+    if (h >= 5 && h < 10) return '朝ランでEXPボーナス獲得中！';
+    if (h >= 10 && h < 17) return 'モンスターが走るのを待っています';
+    if (h >= 17 && h < 21) return '夜ランでEXPボーナス獲得中！';
+    return '深夜もモンスターは元気です';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: '$_greeting、',
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
+              TextSpan(
+                text: username,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const TextSpan(
+                text: '！',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          _subtext,
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Weekly goal + streak combined card
+// ---------------------------------------------------------------------------
+class _WeeklyGoalCard extends StatelessWidget {
+  final double weeklyKm;
+  final int streak;
+  const _WeeklyGoalCard({required this.weeklyKm, required this.streak});
+
+  static const double _weeklyGoalKm = 30.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = (weeklyKm / _weeklyGoalKm).clamp(0.0, 1.0);
+    final isGoalMet = weeklyKm >= _weeklyGoalKm;
+    final hasStreak = streak > 0;
+
+    return PremiumCard(
+      glowColor: hasStreak ? AppColors.accent : AppColors.info,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          // Streak badge
+          Container(
+            width: 60,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: hasStreak
+                  ? AppColors.accent.withValues(alpha: 0.12)
+                  : AppColors.surfaceLight.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: hasStreak
+                    ? AppColors.accent.withValues(alpha: 0.45)
+                    : AppColors.surfaceBorder,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.local_fire_department_rounded,
+                  color: hasStreak ? AppColors.accent : AppColors.textMuted,
+                  size: 22,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$streak',
+                  style: TextStyle(
+                    color: hasStreak ? AppColors.accent : AppColors.textMuted,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    height: 1.0,
+                  ),
+                ),
+                Text(
+                  '日連続',
+                  style: TextStyle(
+                    color: hasStreak ? AppColors.accent.withValues(alpha: 0.8) : AppColors.textMuted,
+                    fontSize: 9,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          // Weekly progress
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      '今週の走行距離',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                    ),
+                    Text(
+                      isGoalMet ? '目標達成！' : '目標 ${_weeklyGoalKm.toInt()}km',
+                      style: TextStyle(
+                        color: isGoalMet ? AppColors.success : AppColors.textMuted,
+                        fontSize: 10,
+                        fontWeight: isGoalMet ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          backgroundColor: AppColors.surfaceLight,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            isGoalMet ? AppColors.success : AppColors.info,
+                          ),
+                          minHeight: 7,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '${weeklyKm.toStringAsFixed(1)} km',
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                if (isGoalMet) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.check_circle, color: AppColors.success, size: 12),
+                      const SizedBox(width: 4),
+                      const Text('週間目標クリア！',
+                          style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Nebula + starfield background
+// ---------------------------------------------------------------------------
+class _NebulaBackground extends StatelessWidget {
+  const _NebulaBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: CustomPaint(painter: _NebulaStarPainter()),
+    );
+  }
+}
+
+class _NebulaStarPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Nebula blob 1: subtle purple top-right
+    final nebula1 = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFF7C3AED).withValues(alpha: 0.09),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromCenter(
+        center: Offset(size.width * 0.85, size.height * 0.12),
+        width: size.width * 0.6,
+        height: size.width * 0.6,
+      ));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), nebula1);
+
+    // Nebula blob 2: subtle blue bottom-left
+    final nebula2 = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFF3B82F6).withValues(alpha: 0.07),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromCenter(
+        center: Offset(size.width * 0.1, size.height * 0.7),
+        width: size.width * 0.5,
+        height: size.width * 0.5,
+      ));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), nebula2);
+
+    // Stars
+    final starPaint = Paint()..style = PaintingStyle.fill;
+    for (final star in _starSeeds) {
+      starPaint.color = Colors.white.withValues(alpha: star.opacity);
+      canvas.drawCircle(
+        Offset(star.x * size.width, star.y * size.height),
+        star.size,
+        starPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ---------------------------------------------------------------------------
 // Premium transparent AppBar with frosted glass + gradient title
 // ---------------------------------------------------------------------------
 class _PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -211,7 +443,7 @@ class _PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
-          color: Colors.white.withValues(alpha: 0.04),
+          color: AppColors.background.withValues(alpha: 0.7),
           child: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -223,46 +455,30 @@ class _PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
               ).createShader(bounds),
               child: const Text(
                 'ランニングモンスター',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
               ),
             ),
             actions: [
               Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.surface.withValues(alpha: 0.8),
+                    color: AppColors.surface.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppColors.gold.withValues(alpha: 0.4),
-                      width: 1,
-                    ),
+                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.5), width: 1),
                     boxShadow: [
-                      BoxShadow(
-                        color: AppColors.gold.withValues(alpha: 0.2),
-                        blurRadius: 8,
-                      ),
+                      BoxShadow(color: AppColors.gold.withValues(alpha: 0.25), blurRadius: 10),
                     ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.monetization_on,
-                          color: AppColors.gold, size: 16),
+                      const Icon(Icons.monetization_on, color: AppColors.gold, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         '$coins',
-                        style: const TextStyle(
-                          color: AppColors.gold,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
+                        style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 14),
                       ),
                     ],
                   ),
@@ -277,46 +493,19 @@ class _PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Star field background
-// ---------------------------------------------------------------------------
-class _StarfieldBackground extends StatelessWidget {
-  const _StarfieldBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: CustomPaint(
-        painter: _StarfieldPainter(),
-      ),
-    );
-  }
-}
-
-class _StarfieldPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-    for (final star in _starSeeds) {
-      paint.color =
-          Colors.white.withValues(alpha: star.opacity);
-      canvas.drawCircle(
-        Offset(star.x * size.width, star.y * size.height),
-        star.size,
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// ---------------------------------------------------------------------------
 // Monster display area
 // ---------------------------------------------------------------------------
 class _MonsterArea extends StatelessWidget {
   final Monster monster;
   const _MonsterArea({required this.monster});
+
+  Color get _monsterGlow {
+    switch (monster.color) {
+      case 'red': return AppColors.red;
+      case 'blue': return AppColors.blue;
+      default: return AppColors.green;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -325,15 +514,15 @@ class _MonsterArea extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Radial glow behind monster
+          // Radial glow — monster-color tinted
           Container(
-            width: 220,
-            height: 220,
+            width: 230,
+            height: 230,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppColors.primary.withValues(alpha: 0.18),
+                  _monsterGlow.withValues(alpha: 0.14),
                   AppColors.primary.withValues(alpha: 0.06),
                   Colors.transparent,
                 ],
@@ -343,25 +532,26 @@ class _MonsterArea extends StatelessWidget {
           ),
           // Outer glowing ring
           Container(
-            width: 180,
-            height: 180,
+            width: 182,
+            height: 182,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppColors.primaryGlow.withValues(alpha: 0.3),
+                color: _monsterGlow.withValues(alpha: 0.28),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.25),
-                  blurRadius: 24,
+                  color: _monsterGlow.withValues(alpha: 0.22),
+                  blurRadius: 28,
                   spreadRadius: 4,
                 ),
               ],
             ),
           ),
-          // Monster widget
-          AnimatedMonsterDisplay(monster: monster),
+          RepaintBoundary(
+            child: AnimatedMonsterDisplay(monster: monster),
+          ),
         ],
       ),
     );
@@ -369,7 +559,7 @@ class _MonsterArea extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// EXP bar with subtle glow beneath
+// EXP bar
 // ---------------------------------------------------------------------------
 class _GlowingExpBar extends StatelessWidget {
   final int totalExp;
@@ -408,7 +598,7 @@ class _StatChipsRow extends StatelessWidget {
           child: _StatChip(
             icon: Icons.today,
             iconColor: AppColors.info,
-            value: '${todayDistanceKm.toStringAsFixed(2)}',
+            value: todayDistanceKm.toStringAsFixed(2),
             unit: 'km',
             label: '今日',
             glowColor: AppColors.info,
@@ -419,7 +609,7 @@ class _StatChipsRow extends StatelessWidget {
           child: _StatChip(
             icon: Icons.route,
             iconColor: AppColors.success,
-            value: '${totalDistanceKm.toStringAsFixed(1)}',
+            value: totalDistanceKm.toStringAsFixed(1),
             unit: 'km',
             label: '累計',
             glowColor: AppColors.success,
@@ -480,20 +670,13 @@ class _StatChip extends StatelessWidget {
                 ),
                 TextSpan(
                   text: ' $unit',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                  ),
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(
-                color: AppColors.textMuted, fontSize: 11),
-          ),
+          Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
         ],
       ),
     );
@@ -516,10 +699,7 @@ class _DailyMissionsCard extends ConsumerWidget {
       child: missionsAsync.when(
         loading: () => const SizedBox(
           height: 60,
-          child: Center(
-            child: CircularProgressIndicator(
-                color: AppColors.success, strokeWidth: 2),
-          ),
+          child: Center(child: CircularProgressIndicator(color: AppColors.success, strokeWidth: 2)),
         ),
         error: (_, __) => _MissionsHeader(done: 0, total: 0),
         data: (missions) {
@@ -561,13 +741,9 @@ class _MissionsHeader extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.success.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: AppColors.success.withValues(alpha: 0.4),
-              width: 1,
-            ),
+            border: Border.all(color: AppColors.success.withValues(alpha: 0.4), width: 1),
           ),
-          child: const Icon(Icons.bolt,
-              color: AppColors.success, size: 22),
+          child: const Icon(Icons.bolt, color: AppColors.success, size: 22),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -576,23 +752,17 @@ class _MissionsHeader extends StatelessWidget {
             children: [
               const Text(
                 'デイリーミッション',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 2),
               Text(
                 total > 0 ? '$done / $total 完了' : '読み込み中...',
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 12),
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
             ],
           ),
         ),
-        const Icon(Icons.chevron_right,
-            color: AppColors.textMuted, size: 20),
+        const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
       ],
     );
   }
@@ -601,17 +771,12 @@ class _MissionsHeader extends StatelessWidget {
 class _GradientProgressBar extends StatelessWidget {
   final double value;
   final Gradient gradient;
-
-  const _GradientProgressBar({
-    required this.value,
-    required this.gradient,
-  });
+  const _GradientProgressBar({required this.value, required this.gradient});
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
         return Container(
           height: 8,
           decoration: BoxDecoration(
@@ -623,15 +788,12 @@ class _GradientProgressBar extends StatelessWidget {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 600),
                 curve: Curves.easeOut,
-                width: width * value.clamp(0.0, 1.0),
+                width: constraints.maxWidth * value.clamp(0.0, 1.0),
                 decoration: BoxDecoration(
                   gradient: gradient,
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
-                    BoxShadow(
-                      color: AppColors.success.withValues(alpha: 0.5),
-                      blurRadius: 6,
-                    ),
+                    BoxShadow(color: AppColors.success.withValues(alpha: 0.5), blurRadius: 6),
                   ],
                 ),
               ),
@@ -683,9 +845,8 @@ class _EvolutionBannerState extends State<_EvolutionBanner>
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: AppColors.accent.withValues(alpha: 0.4),
-              blurRadius: 16,
-              spreadRadius: 0,
+              color: AppColors.accent.withValues(alpha: 0.45),
+              blurRadius: 20,
               offset: const Offset(0, 4),
             ),
           ],
@@ -694,28 +855,20 @@ class _EvolutionBannerState extends State<_EvolutionBanner>
           borderRadius: BorderRadius.circular(14),
           child: Stack(
             children: [
-              // Base gradient background
               Container(
-                padding: const EdgeInsets.symmetric(
-                    vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF92400E),
-                      Color(0xFFB45309),
-                      Color(0xFFD97706),
-                    ],
+                    colors: [Color(0xFF92400E), Color(0xFFB45309), Color(0xFFD97706)],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.auto_awesome,
-                        color: AppColors.accentLight, size: 20),
+                    Icon(Icons.auto_awesome, color: AppColors.accentLight, size: 20),
                     SizedBox(width: 8),
-                    Icon(Icons.star,
-                        color: AppColors.gold, size: 16),
+                    Icon(Icons.star, color: AppColors.gold, size: 16),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -732,25 +885,22 @@ class _EvolutionBannerState extends State<_EvolutionBanner>
                   ],
                 ),
               ),
-              // Shimmer overlay
               AnimatedBuilder(
                 animation: _shimmerCtrl,
                 builder: (context, child) {
+                  final shimmerPos = _shimmerCtrl.value * 2 - 0.5;
                   return Positioned.fill(
                     child: ShaderMask(
-                      shaderCallback: (bounds) {
-                        final shimmerPos = _shimmerCtrl.value * 2 - 0.5;
-                        return LinearGradient(
-                          colors: [
-                            Colors.transparent,
-                            Colors.white.withValues(alpha: 0.15),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.5, 1.0],
-                          begin: Alignment(shimmerPos - 0.8, 0),
-                          end: Alignment(shimmerPos + 0.8, 0),
-                        ).createShader(bounds);
-                      },
+                      shaderCallback: (bounds) => LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.white.withValues(alpha: 0.18),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.5, 1.0],
+                        begin: Alignment(shimmerPos - 0.8, 0),
+                        end: Alignment(shimmerPos + 0.8, 0),
+                      ).createShader(bounds),
                       child: Container(color: Colors.white),
                     ),
                   );
@@ -769,7 +919,6 @@ class _EvolutionBannerState extends State<_EvolutionBanner>
 // ---------------------------------------------------------------------------
 class _MonsterSelectScreen extends StatelessWidget {
   final Future<void> Function(String color) onSelect;
-
   const _MonsterSelectScreen({required this.onSelect});
 
   @override
@@ -778,22 +927,7 @@ class _MonsterSelectScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Star background
-          const _StarfieldBackground(),
-          // Gradient overlay
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.background,
-                  AppColors.backgroundGradientEnd,
-                ],
-              ),
-            ),
-          ),
-          // Content
+          const _NebulaBackground(),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -801,13 +935,9 @@ class _MonsterSelectScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 40),
-                  // Title with gradient
                   ShaderMask(
                     shaderCallback: (bounds) => const LinearGradient(
-                      colors: [
-                        AppColors.primaryLight,
-                        AppColors.accentLight,
-                      ],
+                      colors: [AppColors.primaryLight, AppColors.accentLight],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ).createShader(bounds),
@@ -826,8 +956,7 @@ class _MonsterSelectScreen extends StatelessWidget {
                   const Text(
                     '色の違いだけで能力差はありません',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: AppColors.textSecondary, fontSize: 14),
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                   ),
                   const SizedBox(height: 48),
                   Row(
@@ -909,8 +1038,7 @@ class _MonsterCard extends StatefulWidget {
   State<_MonsterCard> createState() => _MonsterCardState();
 }
 
-class _MonsterCardState extends State<_MonsterCard>
-    with TickerProviderStateMixin {
+class _MonsterCardState extends State<_MonsterCard> with TickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<double> _scaleAnim;
   late AnimationController _breathCtrl;
@@ -919,19 +1047,11 @@ class _MonsterCardState extends State<_MonsterCard>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      duration: const Duration(milliseconds: 120),
-      vsync: this,
-    );
-    _scaleAnim = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
-    );
-    _breathCtrl = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    )..repeat();
-    _breathAnim = Tween<double>(begin: 0.0, end: math.pi * 2)
-        .animate(_breathCtrl);
+    _ctrl = AnimationController(duration: const Duration(milliseconds: 120), vsync: this);
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.95)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    _breathCtrl = AnimationController(duration: const Duration(seconds: 3), vsync: this)..repeat();
+    _breathAnim = Tween<double>(begin: 0.0, end: math.pi * 2).animate(_breathCtrl);
   }
 
   @override
@@ -952,21 +1072,16 @@ class _MonsterCardState extends State<_MonsterCard>
       onTapCancel: () => _ctrl.reverse(),
       child: AnimatedBuilder(
         animation: _scaleAnim,
-        builder: (context, child) =>
-            Transform.scale(scale: _scaleAnim.value, child: child),
+        builder: (context, child) => Transform.scale(scale: _scaleAnim.value, child: child),
         child: Container(
           decoration: BoxDecoration(
             gradient: widget.cardGradient,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: widget.glowColor.withValues(alpha: 0.5),
-              width: 1.5,
-            ),
+            border: Border.all(color: widget.glowColor.withValues(alpha: 0.55), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: widget.glowColor.withValues(alpha: 0.35),
-                blurRadius: 16,
-                spreadRadius: 0,
+                color: widget.glowColor.withValues(alpha: 0.4),
+                blurRadius: 18,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -975,7 +1090,6 @@ class _MonsterCardState extends State<_MonsterCard>
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
             child: Column(
               children: [
-                // Animated monster preview
                 Container(
                   width: 80,
                   height: 80,
@@ -983,52 +1097,42 @@ class _MonsterCardState extends State<_MonsterCard>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: widget.glowColor.withValues(alpha: 0.35),
-                        blurRadius: 20,
+                        color: widget.glowColor.withValues(alpha: 0.4),
+                        blurRadius: 22,
                         spreadRadius: 2,
                       ),
                     ],
                   ),
-                  child: AnimatedBuilder(
-                    animation: _breathAnim,
-                    builder: (_, __) => buildMonsterWidget(
-                      'runmon_${widget.color}',
-                      widget.color,
-                      size: 80,
-                      animValue: _breathAnim.value,
+                  child: RepaintBoundary(
+                    child: AnimatedBuilder(
+                      animation: _breathAnim,
+                      builder: (_, __) => buildMonsterWidget(
+                        'runmon_${widget.color}',
+                        widget.color,
+                        size: 80,
+                        animValue: _breathAnim.value,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   widget.label,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   widget.description,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                  ),
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
                 ),
                 const SizedBox(height: 14),
-                // SELECT button
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 6, horizontal: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 14),
                   decoration: BoxDecoration(
-                    color: widget.glowColor.withValues(alpha: 0.25),
+                    color: widget.glowColor.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: widget.glowColor.withValues(alpha: 0.7),
-                      width: 1,
-                    ),
+                    border: Border.all(color: widget.glowColor.withValues(alpha: 0.7), width: 1),
                   ),
                   child: Text(
                     'SELECT',

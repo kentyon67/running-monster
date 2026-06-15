@@ -216,6 +216,7 @@ class _RunResultScreenState extends ConsumerState<RunResultScreen>
                 monster: monster,
                 monsterAnim: _monsterAnim,
                 didLevelUp: _didLevelUp,
+                distanceKm: r.distanceKm,
               ),
               const SizedBox(height: 16),
             ],
@@ -361,11 +362,13 @@ class _MonsterVictorySection extends StatelessWidget {
   final Monster monster;
   final Animation<double> monsterAnim;
   final bool didLevelUp;
+  final double distanceKm;
 
   const _MonsterVictorySection({
     required this.monster,
     required this.monsterAnim,
     required this.didLevelUp,
+    required this.distanceKm,
   });
 
   Color get _glowColor {
@@ -374,6 +377,24 @@ class _MonsterVictorySection extends StatelessWidget {
       case 'blue': return AppColors.blue;
       default: return AppColors.green;
     }
+  }
+
+  String get _message {
+    if (didLevelUp) return 'レベルアップ！';
+    if (distanceKm >= 42.195) return 'フルマラソン完走！伝説の走者！';
+    if (distanceKm >= 21.1) return 'ハーフマラソン達成！圧巻の走り！';
+    if (distanceKm >= 10.0) return '10km突破！マスターランナー！';
+    if (distanceKm >= 5.0) return '5kmクリア！素晴らしいラン！';
+    if (distanceKm >= 3.0) return '3km達成！いい調子です！';
+    if (distanceKm >= 1.0) return 'ランを完走！よくやった！';
+    return 'おつかれさまでした！';
+  }
+
+  String get _subMessage {
+    if (didLevelUp) return '${monster.name}がさらに強くなった！';
+    if (distanceKm >= 10.0) return '${monster.name}も大喜び！';
+    if (distanceKm >= 3.0) return '${monster.name}がうれしそう！';
+    return '${monster.name}と一緒に走れた！';
   }
 
   @override
@@ -386,12 +407,15 @@ class _MonsterVictorySection extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            _glowColor.withValues(alpha: 0.12),
+            _glowColor.withValues(alpha: 0.14),
             AppColors.surface,
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _glowColor.withValues(alpha: 0.25)),
+        border: Border.all(color: _glowColor.withValues(alpha: 0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(color: _glowColor.withValues(alpha: 0.15), blurRadius: 20),
+        ],
       ),
       child: Column(
         children: [
@@ -399,8 +423,8 @@ class _MonsterVictorySection extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               Container(
-                width: 160,
-                height: 160,
+                width: 168,
+                height: 168,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
@@ -414,51 +438,48 @@ class _MonsterVictorySection extends StatelessWidget {
                 ),
               ),
               Container(
-                width: 128,
-                height: 128,
+                width: 130,
+                height: 130,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _glowColor.withValues(alpha: 0.35),
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: _glowColor.withValues(alpha: 0.4), width: 1.5),
                   boxShadow: [
-                    BoxShadow(
-                      color: _glowColor.withValues(alpha: 0.3),
-                      blurRadius: 24,
-                      spreadRadius: 4,
-                    ),
+                    BoxShadow(color: _glowColor.withValues(alpha: 0.35), blurRadius: 28, spreadRadius: 4),
                   ],
                 ),
               ),
-              AnimatedBuilder(
-                animation: monsterAnim,
-                builder: (_, __) => buildMonsterWidget(
-                  monster.currentEvolutionId,
-                  monster.color,
-                  size: 110,
-                  animValue: monsterAnim.value,
+              RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: monsterAnim,
+                  builder: (_, __) => buildMonsterWidget(
+                    monster.currentEvolutionId,
+                    monster.color,
+                    size: 114,
+                    animValue: monsterAnim.value,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            didLevelUp ? 'レベルアップ！' : 'おつかれさまでした！',
-            style: TextStyle(
-              color: _glowColor,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
+          const SizedBox(height: 14),
+          ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              colors: [_glowColor, _glowColor.withValues(alpha: 0.75)],
+            ).createShader(bounds),
+            child: Text(
+              _message,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
-            monster.name,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-            ),
+            _subMessage,
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
         ],
       ),

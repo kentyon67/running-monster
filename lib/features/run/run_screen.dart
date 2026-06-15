@@ -88,21 +88,8 @@ class RunScreen extends ConsumerWidget {
                     ? _RunMonsterDisplay(monster: monster)
                     : const _BouncingRunnerIcon(),
                 const SizedBox(height: 28),
-                // Hero text
-                const Text(
-                  '走る準備はできていますか？',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'GPS精度のため屋外でお試しください',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-                ),
+                // Hero text — time-based motivation
+                _RunMotivationText(),
                 const Spacer(),
                 // EXP multiplier tips
                 Padding(
@@ -130,6 +117,63 @@ class RunScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Time-based motivation text widget
+// ---------------------------------------------------------------------------
+class _RunMotivationText extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final h = DateTime.now().hour;
+    final String headline;
+    final String sub;
+
+    if (h >= 5 && h < 9) {
+      headline = '朝ランで最高のスタートを！';
+      sub = '朝ランEXPボーナス × 1.1 獲得中';
+    } else if (h >= 9 && h < 12) {
+      headline = 'モンスターとともに走ろう！';
+      sub = '1km走るごとにモンスターが成長します';
+    } else if (h >= 12 && h < 17) {
+      headline = '今日もいっしょに走りましょう！';
+      sub = '10km走ればEXPボーナス × 1.5';
+    } else if (h >= 17 && h < 21) {
+      headline = '夕暮れランでEXPボーナス！';
+      sub = '夜ランEXPボーナス × 1.1 獲得中';
+    } else {
+      headline = '夜もモンスターは待っています！';
+      sub = '深夜ランでもEXPはちゃんと貯まります';
+    }
+
+    return Column(
+      children: [
+        Text(
+          headline,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.accent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+          ),
+          child: Text(
+            sub,
+            style: const TextStyle(color: AppColors.accent, fontSize: 12),
+          ),
+        ),
+      ],
     );
   }
 }

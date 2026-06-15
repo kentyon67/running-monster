@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Backgrounds - deep space
-  static const background = Color(0xFF080B14);
-  static const backgroundGradientEnd = Color(0xFF0F1729);
-  static const surface = Color(0xFF111827);
-  static const surfaceLight = Color(0xFF1F2937);
-  static const surfaceBorder = Color(0xFF374151);
+  // Backgrounds — deep midnight navy (brighter than pure black)
+  static const background = Color(0xFF0C1629);
+  static const backgroundGradientEnd = Color(0xFF152242);
+  static const surface = Color(0xFF162438);
+  static const surfaceLight = Color(0xFF1F3254);
+  static const surfaceBorder = Color(0xFF2C4268);
 
-  // Accents - neon
+  // Accents — neon
   static const primary = Color(0xFF7C3AED);
   static const primaryLight = Color(0xFFA78BFA);
   static const primaryGlow = Color(0xFF8B5CF6);
@@ -31,7 +31,7 @@ class AppColors {
   // Special
   static const gold = Color(0xFFFFD700);
   static const expBar = Color(0xFF34D399);
-  static const expBarBg = Color(0xFF1F2937);
+  static const expBarBg = Color(0xFF1F3254);
   static const navSelected = Color(0xFF7C3AED);
   static const navUnselected = Color(0xFF6B7280);
 

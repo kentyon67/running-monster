@@ -64,9 +64,9 @@ class _PremiumNavBar extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1117),
+        color: AppColors.surface,
         border: const Border(
-          top: BorderSide(color: AppColors.surfaceBorder, width: 1),
+          top: BorderSide(color: AppColors.surfaceBorder, width: 1.5),
         ),
         boxShadow: [
           BoxShadow(
