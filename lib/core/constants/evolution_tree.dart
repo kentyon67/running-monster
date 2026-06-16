@@ -19,30 +19,14 @@ class EvolutionNode {
 }
 
 const Map<String, EvolutionNode> kEvolutionTree = {
-  // Base forms (Lv1)
-  'runmon_red': EvolutionNode(
-    id: 'runmon_red',
-    name: 'ランモン(赤)',
-    emoji: '🦊',
+  // Base form (Lv1) — 1 species, 3 colors (red/blue/green), no stat difference
+  'runmon': EvolutionNode(
+    id: 'runmon',
+    name: 'ランモン',
+    emoji: '⚡',
     requiredLevel: 1,
     nextEvolutions: ['beastmon', 'spiritmon'],
-    description: '走ることが大好きな赤いモンスター',
-  ),
-  'runmon_blue': EvolutionNode(
-    id: 'runmon_blue',
-    name: 'ランモン(青)',
-    emoji: '🐬',
-    requiredLevel: 1,
-    nextEvolutions: ['beastmon', 'spiritmon'],
-    description: '走ることが大好きな青いモンスター',
-  ),
-  'runmon_green': EvolutionNode(
-    id: 'runmon_green',
-    name: 'ランモン(緑)',
-    emoji: '🐸',
-    requiredLevel: 1,
-    nextEvolutions: ['beastmon', 'spiritmon'],
-    description: '走ることが大好きな緑のモンスター',
+    description: '走ることが大好きなモンスター。色によって個性が異なる。',
   ),
 
   // Lv10 evolutions

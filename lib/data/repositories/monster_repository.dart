@@ -14,7 +14,9 @@ class MonsterRepository {
     final raw = HiveBoxes.monster.get(_key);
     if (raw == null) return null;
     try {
-      _cache = Monster.fromMap(raw as Map);
+      var monster = Monster.fromMap(raw as Map);
+      monster = _migrateEvolutionId(monster);
+      _cache = monster;
       return _cache;
     } catch (e) {
       debugPrint('MonsterRepository: corrupted monster data — $e. Resetting.');
@@ -22,6 +24,17 @@ class MonsterRepository {
       _cache = null;
       return null;
     }
+  }
+
+  // Lazy migration: runmon_red/blue/green → runmon (spec fix)
+  Monster _migrateEvolutionId(Monster monster) {
+    const legacyIds = {'runmon_red', 'runmon_blue', 'runmon_green'};
+    if (!legacyIds.contains(monster.currentEvolutionId)) return monster;
+    monster.currentEvolutionId = 'runmon';
+    monster.evolutionPath =
+        monster.evolutionPath.map((id) => legacyIds.contains(id) ? 'runmon' : id).toList();
+    HiveBoxes.monster.put(_key, monster.toMap());
+    return monster;
   }
 
   Monster? get current => _cache;

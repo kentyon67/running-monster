@@ -31,12 +31,16 @@ Widget buildMonsterWidget(
 
   CustomPainter painter;
 
-  // ── Base forms ──────────────────────────────────────────────────────────────
-  if (id == 'runmon_red' || (id.startsWith('runmon') && monsterColor == 'red')) {
+  // ── Base form: 1 species 'runmon', visual differentiated by color only ───────
+  if (id == 'runmon') {
+    painter = _buildRunmonPainter(color, monsterColor, animValue);
+  }
+  // Legacy backward-compat for Hive data before lazy migration runs
+  else if (id == 'runmon_red') {
     painter = FoxMonsterPainter(color, animValue: animValue);
-  } else if (id == 'runmon_blue' || (id.startsWith('runmon') && monsterColor == 'blue')) {
+  } else if (id == 'runmon_blue') {
     painter = DolphinMonsterPainter(color, animValue: animValue);
-  } else if (id == 'runmon_green' || (id.startsWith('runmon') && monsterColor == 'green')) {
+  } else if (id == 'runmon_green') {
     painter = FrogMonsterPainter(color, animValue: animValue);
   }
 
@@ -106,6 +110,17 @@ Widget buildMonsterWidget(
   );
 }
 
+CustomPainter _buildRunmonPainter(Color color, String monsterColor, double animValue) {
+  switch (monsterColor.toLowerCase()) {
+    case 'blue':
+      return DolphinMonsterPainter(color, animValue: animValue);
+    case 'green':
+      return FrogMonsterPainter(color, animValue: animValue);
+    default:
+      return FoxMonsterPainter(color, animValue: animValue);
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Base class
 // ─────────────────────────────────────────────────────────────────────────────
@@ -117,7 +132,7 @@ abstract class BaseMonsterPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant BaseMonsterPainter oldDelegate) =>
-      oldDelegate.animValue != animValue;
+      oldDelegate.animValue != animValue || oldDelegate.primaryColor != primaryColor;
 
   /// Draw a soft radial glow behind the monster (pulses with animValue).
   void drawAura(Canvas canvas, Size size, List<Color> colors, {double radius = 0.46}) {

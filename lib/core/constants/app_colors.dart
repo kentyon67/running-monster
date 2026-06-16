@@ -1,39 +1,41 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Backgrounds — deep midnight navy (brighter than pure black)
-  static const background = Color(0xFF0C1629);
-  static const backgroundGradientEnd = Color(0xFF152242);
-  static const surface = Color(0xFF162438);
-  static const surfaceLight = Color(0xFF1F3254);
-  static const surfaceBorder = Color(0xFF2C4268);
+  // Backgrounds — light, friendly (Duolingo/Finch style)
+  static const background = Color(0xFFF5F3FF); // lavender white
+  static const backgroundGradientEnd = Color(0xFFEDE9FE);
+  static const surface = Color(0xFFFFFFFF); // pure white card
+  static const surfaceWarm = Color(0xFFFFF8F0); // cream
+  static const surfaceLight = Color(0xFFF3F0FF); // light violet tint
+  static const surfaceBorder = Color(0xFFE4E0F0); // soft border
 
-  // Accents — neon
-  static const primary = Color(0xFF7C3AED);
-  static const primaryLight = Color(0xFFA78BFA);
-  static const primaryGlow = Color(0xFF8B5CF6);
-  static const accent = Color(0xFFF59E0B);
-  static const accentLight = Color(0xFFFBBF24);
-  static const success = Color(0xFF10B981);
-  static const danger = Color(0xFFEF4444);
-  static const info = Color(0xFF3B82F6);
+  // Brand
+  static const primary = Color(0xFF7C4DFF); // vivid violet
+  static const primaryLight = Color(0xFFB39DFF);
+  static const primaryGlow = Color(0xFF9C6FFF);
+  static const secondary = Color(0xFFFF6B35); // coral orange
+  static const accent = Color(0xFFFFCC00); // sunflower gold
+  static const accentLight = Color(0xFFFFE066);
+  static const success = Color(0xFF4CAF50);
+  static const danger = Color(0xFFF44336);
+  static const info = Color(0xFF2196F3);
 
-  // Text
-  static const textPrimary = Color(0xFFF9FAFB);
-  static const textSecondary = Color(0xFF9CA3AF);
-  static const textMuted = Color(0xFF6B7280);
+  // Text — dark on light background
+  static const textPrimary = Color(0xFF1A1333); // deep navy
+  static const textSecondary = Color(0xFF6B6080); // muted purple-grey
+  static const textMuted = Color(0xFF9E95B5); // light purple-grey
 
-  // Monster colors
-  static const red = Color(0xFFDC2626);
-  static const blue = Color(0xFF2563EB);
-  static const green = Color(0xFF16A34A);
+  // Monster accent colors
+  static const red = Color(0xFFE53935);
+  static const blue = Color(0xFF1565C0);
+  static const green = Color(0xFF2E7D32);
 
   // Special
   static const gold = Color(0xFFFFD700);
-  static const expBar = Color(0xFF34D399);
-  static const expBarBg = Color(0xFF1F3254);
-  static const navSelected = Color(0xFF7C3AED);
-  static const navUnselected = Color(0xFF6B7280);
+  static const expBar = Color(0xFF7C4DFF);
+  static const expBarBg = Color(0xFFEDE9FE);
+  static const navSelected = Color(0xFF7C4DFF);
+  static const navUnselected = Color(0xFF9E95B5);
 
   // Rarity colors for gacha
   static const raritySSR = Color(0xFFFFD700);

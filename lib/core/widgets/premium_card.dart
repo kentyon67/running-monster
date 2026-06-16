@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
-/// A premium-styled card with optional glow border and gradient background.
-///
-/// Use this as a drop-in replacement for Card/Container wherever a
-/// visually elevated, game-style surface is desired.
+/// Soft white card — Duolingo/Finch style, no glow border.
+/// Use for all game surfaces in the light theme.
 class PremiumCard extends StatelessWidget {
   final Widget child;
   final EdgeInsets? padding;
-  final Color? glowColor;
+  final Color? glowColor; // kept for API compat, now unused
   final double borderRadius;
   final Gradient? gradient;
   final VoidCallback? onTap;
@@ -18,36 +16,30 @@ class PremiumCard extends StatelessWidget {
     required this.child,
     this.padding,
     this.glowColor,
-    this.borderRadius = 16,
+    this.borderRadius = 20,
     this.gradient,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final effectiveGlow = glowColor ?? AppColors.primary;
-
     final container = Container(
       decoration: BoxDecoration(
         color: gradient == null ? AppColors.surface : null,
         gradient: gradient,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: effectiveGlow.withValues(alpha: 0.6),
-          width: 1,
-        ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: effectiveGlow.withValues(alpha: 0.3),
-            blurRadius: 12,
+            color: Color(0x14000000), // 8% black
+            blurRadius: 16,
             spreadRadius: 0,
-            offset: Offset.zero,
+            offset: Offset(0, 4),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: Color(0x0A7C4DFF), // 4% violet
             blurRadius: 8,
             spreadRadius: 0,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -61,10 +53,7 @@ class PremiumCard extends StatelessWidget {
     );
 
     if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        child: container,
-      );
+      return GestureDetector(onTap: onTap, child: container);
     }
     return container;
   }

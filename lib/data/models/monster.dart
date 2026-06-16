@@ -65,6 +65,6 @@ class Monster {
         id: id,
         name: 'ランモン',
         color: color,
-        currentEvolutionId: 'runmon_$color',
+        currentEvolutionId: 'runmon',
       );
 }
