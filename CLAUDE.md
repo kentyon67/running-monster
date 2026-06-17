@@ -27,6 +27,9 @@ GPS でランニングを計測し、走った距離がそのままモンスタ�
 | [docs/08_evolution_design.md](docs/08_evolution_design.md) | 進化ツリー・選択ロジック |
 | [docs/09_product_vision.md](docs/09_product_vision.md) | ミッション・KPI・競合比較 |
 | [docs/10_roadmap.md](docs/10_roadmap.md) | フェーズ別タスク・Known Issues |
+| [docs/11_business_strategy.md](docs/11_business_strategy.md) | 市場・競合・出口戦略 |
+| [docs/12_growth_strategy.md](docs/12_growth_strategy.md) | 獲得・継続・バイラル戦略 |
+| [docs/13_kpi_metrics.md](docs/13_kpi_metrics.md) | KPI 定義・ファネル・計測ツール |
 
 ---
 
@@ -88,12 +91,15 @@ lib/
 | 基本 EXP | 100/km |
 | 基本コイン | 100/km |
 | 最大 EXP 倍率 | 1.5×（10km 以上） |
-| ガチャ 1 連コスト | 300 コイン |
-| ガチャ 10 連コスト | 2,500 コイン |
+| ガチャ 1 連コスト | 500 コイン |
+| ガチャ 10 連コスト | 4,500 コイン |
 | 週間目標 | 30km |
 | 最低走行距離 | 0.5km |
 | 最低走行時間 | 3 分（180 秒） |
-| 進化分岐点 | Lv10 / Lv20 / Lv30 / Lv40 |
+| 進化分岐点（2択） | Lv10 / Lv20 / Lv30 |
+| 最終進化（確定） | Lv40 |
+| スキン解放 | Lv50 |
+| モンスター種族 | ランモン 1 種（赤/青/緑 カラー選択） |
 
 ---
 
@@ -141,7 +147,8 @@ dart run flutter_native_splash:create
 |-----|-----|
 | オフラインファースト（Hive のみ） | GPS 計測中のネットワーク依存を排除 |
 | OpenStreetMap（API キー不要） | 費用・設定コストなしで地図を提供 |
-| 進化は不可逆 | プレイヤーの選択への責任感と愛着を生む |
+| 進化は不可逆（通常） | プレイヤーの選択への責任感と愛着を生む |
+| リセット機能あり | Lv/EXP/進化ルートをリセット。コイン/アイテム/走行履歴は保持 |
 | コスメのみ課金 | ゲームプレイの公平性を絶対に守る |
 | Material 3 | Flutter 最新標準に従い将来の互換性を確保 |
 

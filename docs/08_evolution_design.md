@@ -2,32 +2,38 @@
 
 ## 概要
 
-進化システムはゲームの長期エンゲージメントの中核。4つの分岐点でプレイヤーが選択を行い、ユニークな育成ストーリーを作る。
+進化システムはゲームの長期エンゲージメントの中核。Lv10/20/30 の3回で2択を選び、Lv40 で一意の最終形態へ到達する。プレイヤーの選択が積み重なり、「自分だけのモンスター」を育てる体験を作る。
 
 ---
 
 ## 進化ツリー全体図
 
 ```
-                    Runmon (Lv1)
-                   ⚡ カラー3種
-                        |
-              ┌─────────┴─────────┐
-           Lv10                 Lv10
-         Beastmon             Spiritmon
-          🦁 獣道              👻 霊道
-         /      \             /      \
-      Lv20     Lv20        Lv20     Lv20
-    Lionmon  Wolfmon    Phoenixmon Dragonmon
-     🦁 王者   🐺 野生    🦅 再生    🐉 嵐
-    /    \   /    \     /    \    /    \
-  Lv30  Lv30Lv30  Lv30 Lv30  Lv30Lv30  Lv30
- Leomon King Fenrir Arctic Blaze Shadow Storm Crystal
-  👑    🏆   ❄️    ❄️    🔥    🌑    ⚡    💎
+                        ランモン (Lv1)
+                       ⚡ カラー3種（赤/青/緑）
+                              |
+               ┌──────────────┴──────────────┐
+           [Lv10]                         [Lv10]
+         グランドモン                    ウィングモン
+          🦶 大地道                       🪶 天空道
+          /         \                   /         \
+      [Lv20]      [Lv20]           [Lv20]       [Lv20]
+   ビーストモン  ナイトモン        バードモン    スピリモン
+    🐾 野性      ⚔️ 誓騎           🦅 疾翔       ✨ 霊聖
+    /    \       /    \           /    \        /    \
+[Lv30] [Lv30] [Lv30] [Lv30] [Lv30] [Lv30] [Lv30] [Lv30]
+フェン レオ パラ ダーク フェニ ライ ルクス ノクス
+リル   モン ディン ナイト モン チョウ モン   モン
+モン       モン  モン      モン
+  ↓    ↓    ↓    ↓    ↓    ↓    ↓    ↓
+[Lv40 最終進化（1形態確定）]
+フェン ソル セイント アビス フェニックス サンダー ルミナス ノクス
+リル  レオン パラ  ナイト  ロード     バード   セラフ  ファント
+ロード ロード ディン ロード           ロード          ム
 ```
 
-**合計:** 1 基本形 + 2 Lv10 + 4 Lv20 + 8 Lv30/40 terminal = **15 形態**  
-**カラー込み:** 15 形態 × 3 カラー = **45 パターン**
+**合計:** 1(Lv1) + 2(Lv10) + 4(Lv20) + 8(Lv30) + 8(Lv40) = **23 形態**  
+**カラー込み:** 23 × 3 = **69 パターン**
 
 ---
 
@@ -35,38 +41,51 @@
 
 ### 基本形（Lv1）
 
-| ID | 名前 | 絵文字 | 解放レベル | 次の進化 |
-|----|-----|-------|---------|--------|
-| runmon | ランモン | ⚡ | 1 | beastmon, spiritmon |
+| ID | 名前 | 絵文字 | 次の進化（Lv10） |
+|----|-----|-------|--------------|
+| runmon | ランモン | ⚡ | grandmon / wingmon |
 
-### 第1進化（Lv10）
+### 第1進化（Lv10）— 2択
 
-| ID | 名前 | 絵文字 | 解放レベル | 次の進化 |
-|----|-----|-------|---------|--------|
-| beastmon | ビーストモン | 🦁 | 10 | lionmon, wolfmon |
-| spiritmon | スピリットモン | 👻 | 10 | phoenixmon, dragonmon |
+| ID | 名前 | 絵文字 | テーマ | 次の進化（Lv20） |
+|----|-----|-------|------|--------------|
+| grandmon | グランドモン | 🦶 | 大地・根・力 | beastmon / knightmon |
+| wingmon | ウィングモン | 🪶 | 空・自由・速さ | birdmon / spirimon |
 
-### 第2進化（Lv20）
+### 第2進化（Lv20）— 2択
 
-| ID | 名前 | 絵文字 | 親 | 次の進化 |
-|----|-----|-------|---|--------|
-| lionmon | ライオンモン | 🦁 | beastmon | leomon, kingmon |
-| wolfmon | ウルフモン | 🐺 | beastmon | fenrirmon, arcticmon |
-| phoenixmon | フェニックスモン | 🦅 | spiritmon | blazemon, shadowmon |
-| dragonmon | ドラゴンモン | 🐉 | spiritmon | stormmon, crystalmon |
+| ID | 名前 | 絵文字 | 親 | 次の進化（Lv30） |
+|----|-----|-------|---|--------------|
+| beastmon | ビーストモン | 🐾 | grandmon | fenrirmon / leomon |
+| knightmon | ナイトモン | ⚔️ | grandmon | paladinmon / darkknightmon |
+| birdmon | バードモン | 🦅 | wingmon | phenixmon / raichomon |
+| spirimon | スピリモン | ✨ | wingmon | luxmon / noxmon |
 
-### 最終形態（Lv30/40 terminal）
+### 第3進化（Lv30）— 2択
+
+| ID | 名前 | 絵文字 | 親 | 最終進化（Lv40） |
+|----|-----|-------|---|--------------|
+| fenrirmon | フェンリルモン | 🐺 | beastmon | fenrirlord |
+| leomon | レオモン | 🦁 | beastmon | solreonlord |
+| paladinmon | パラディンモン | 🛡️ | knightmon | saintpaladin |
+| darkknightmon | ダークナイトモン | 🌑 | knightmon | abyssknightlord |
+| phenixmon | フェニモン | 🔥 | birdmon | phoenixlord |
+| raichomon | ライチョウモン | ⚡ | birdmon | thunderbirdlord |
+| luxmon | ルクスモン | ☀️ | spirimon | luminousseraph |
+| noxmon | ノクスモン | 🌙 | spirimon | noxphantom |
+
+### 最終形態（Lv40）— 選択なし・確定進化
 
 | ID | 名前 | 絵文字 | 親 |
 |----|-----|-------|---|
-| leomon | レオモン | 👑 | lionmon |
-| kingmon | キングモン | 🏆 | lionmon |
-| fenrirmon | フェンリルモン | ❄️ | wolfmon |
-| arcticmon | アークティックモン | ❄️ | wolfmon |
-| blazemon | ブレイズモン | 🔥 | phoenixmon |
-| shadowmon | シャドウモン | 🌑 | phoenixmon |
-| stormmon | ストームモン | ⚡ | dragonmon |
-| crystalmon | クリスタルモン | 💎 | dragonmon |
+| fenrirlord | フェンリルロード | 🐺💎 | fenrirmon |
+| solreonlord | ソルレオンロード | 🦁👑 | leomon |
+| saintpaladin | セイントパラディン | 🛡️✨ | paladinmon |
+| abyssknightlord | アビスナイトロード | 🌑⚔️ | darkknightmon |
+| phoenixlord | フェニックスロード | 🔥🦅 | phenixmon |
+| thunderbirdlord | サンダーバードロード | ⚡🦅 | raichomon |
+| luminousseraph | ルミナスセラフ | ☀️👼 | luxmon |
+| noxphantom | ノクスファントム | 🌙👻 | noxmon |
 
 ---
 
@@ -75,28 +94,76 @@
 ### 解放条件
 
 ```
-monster.level >= evolutionNode.requiredLevel
-&& evolutionNode.requiredParent == monster.currentEvolutionId
+// Lv10/20/30 は 2択を選ぶ
+条件: monster.level >= evolutionNode.requiredLevel
+      && evolutionNode.requiredParent == monster.currentEvolutionId
+→ isEvolutionAvailable = true（2択表示）
+
+// Lv40 は選択なし・自動確定
+条件: monster.level >= 40
+      && currentEvolution は Lv30 形態である
+→ 自動的に唯一の最終形態へ進化（確認ダイアログのみ）
 ```
 
-条件を満たした時点で `isEvolutionAvailable = true` に設定。
-
-### 選択フロー
+### 選択フロー（Lv10/20/30）
 
 1. ホーム画面に進化バナー（シマーアニメーション）表示
-2. モンスター画面「進化」タブに選択肢表示
-3. ユーザーが 2 択の 1 つをタップ → 確認ダイアログ（不可逆の警告）
+2. モンスター画面「進化」タブに **2択** 表示
+3. ユーザーが選択 → 不可逆確認ダイアログ
 4. 確認後:
    - `monster.evolutionPath.add(chosenId)`
    - `monster.currentEvolutionId = chosenId`
    - `monster.isEvolutionAvailable = false`
-5. Hive へ保存 → ホーム画面でモンスター表示を更新
+5. Hive 保存 → UI 更新
+
+### 最終進化フロー（Lv40）
+
+1. ホーム画面に「最終進化！」バナー（特別演出）
+2. モンスター画面「進化」タブに確定形態を表示（選択なし）
+3. 「進化する」ボタン → 確認ダイアログ
+4. 進化演出アニメーション
+5. 最終形態に固定
 
 ### 不可逆性
 
-- 選択した進化は**変更・リセット不可**
-- 進化履歴は `evolutionPath[]` に永続保存
-- 課金やアイテムによるリセットも設計上なし（意図的）
+- Lv10/20/30 の選択は**変更・リセット不可**（通常プレイ中）
+- ただし**リセット機能**でレベル・進化ルートを初期化可能（後述）
+- 課金によるリセットは設計上なし
+
+---
+
+## リセットシステム
+
+### 概要
+
+育成をやり直したいユーザー向けにリセット機能を提供。「チャレンジの多様性」を高め、長期継続率に貢献する。
+
+### リセット対象（初期化）
+
+| データ | リセット後 |
+|-------|---------|
+| レベル | 1 に戻る |
+| EXP | 0 に戻る |
+| 進化ルート | ランモンに戻る |
+| 進化履歴 | クリア |
+| isEvolutionAvailable | false |
+
+### 保持するデータ
+
+| データ | 説明 |
+|-------|-----|
+| コイン | リセット後も全額保持 |
+| 所持アイテム | ガチャ・実績で得たコスメはすべて保持 |
+| ラン履歴（RunRecord） | 過去の走行記録はすべて保持 |
+| 累計走行距離 | totalDistanceKm は変化しない |
+| 実績 | 達成済みはそのまま |
+
+### 制限・条件
+
+- 無制限にリセット可能（回数制限なし）
+- リセット前に確認ダイアログ（2段階確認を推奨）
+- リセット後: カラーは選択済みのまま維持（再選択不要）
+- リセット後: 再びオンボーディングは不要
 
 ---
 
@@ -106,20 +173,12 @@ monster.level >= evolutionNode.requiredLevel
 
 | 要素 | 影響 |
 |-----|-----|
-| HP/攻撃等のステータス | 存在しない |
-| 報酬乗数 | 変化しない |
+| 報酬 EXP/コイン | 変化しない |
 | ガチャ排出率 | 変化しない |
 | ミッション内容 | 変化しない |
+| 実績解除条件 | 変化しない |
 
-進化はあくまでも「プレイヤーのモンスターへの愛着と物語」を生むための仕組みであり、ゲームプレイ上の有利不利は存在しない。
-
----
-
-## 進化とカラーの関係
-
-- カラー（赤/青/緑）は初期選択時に固定
-- 進化しても同カラーを維持
-- 見た目のみの差異
+進化はプレイヤーの「愛着と物語」のための仕組み。ゲームプレイ上の優劣は存在しない。
 
 ---
 
@@ -128,12 +187,20 @@ monster.level >= evolutionNode.requiredLevel
 | 要素 | 仕様 |
 |-----|-----|
 | 解放条件 | Lv50 到達（`skinUnlocked = true`） |
-| 取得方法 | ガチャのみ（N〜SSR） |
+| 取得方法 | **ガチャ** または **実績報酬** |
 | 装備 | モンスター画面「アイテム」タブで選択 |
-| 枚数 | 同時装備 1 枚 |
+| 同時装備 | 1枚 |
 | 進化形態への影響 | なし（スキン ≠ 進化） |
 
 スキンは「Lv50 到達後も走る理由」として機能するエンドゲームコンテンツ。
+
+---
+
+## カラーとの関係
+
+- カラー（赤/青/緑）はオンボーディング時に選択、その後固定
+- 進化しても同カラーを維持（例: 赤ランモン → 赤グランドモン）
+- カラーは見た目の差異のみ、ステータス・進化先への影響なし
 
 ---
 
@@ -141,8 +208,9 @@ monster.level >= evolutionNode.requiredLevel
 
 | ポイント | 意図 |
 |--------|-----|
-| 2択の分岐 | 「どちらも良さそう」な選択肢で迷わせる |
-| 不可逆性 | 選んだことへの「責任感」と愛着 |
-| 4回の選択機会 | 1.5年以上のプレイスパンで計4回のイベント |
-| ステータス差なし | 後悔しない設計（選択の後悔をなくす） |
-| カラー × 進化 | 「自分だけの」モンスター感 |
+| Lv10/20/30 の 2択 | 「どちらを選ぶか」の悩みが愛着を生む |
+| Lv40 の確定進化 | 「ここまで来た」達成感の演出 |
+| 不可逆性（通常） | 選択への責任感・コミットメント |
+| リセット可能 | やり直しの自由で別ルートへの興味継続 |
+| ステータス差なし | 後悔しない設計・全ルート等価 |
+| カラー × 進化 | 「自分だけの1体」感 |

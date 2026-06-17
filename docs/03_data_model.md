@@ -59,7 +59,7 @@
 | currentEvolutionId | String | `'runmon'` | 現在の進化形態 ID |
 | evolutionPath | List\<String\> | [] | 選択した進化履歴 |
 | isEvolutionAvailable | bool | false | 進化選択可能フラグ |
-| nameChangeRemaining | int | 1 | 名前変更残り回数 |
+| monsterNameChangeRemaining | int | 1 | モンスター名変更残り回数（0になると変更不可） |
 | skinUnlocked | bool | false | Lv50 到達でスキン解放 |
 | selectedSkin | String? | null | 装備中のスキン ID |
 | selectedAura | String? | null | 装備中のオーラ ID |
@@ -212,15 +212,44 @@
 
 ```
 {
-  id: String,           // 'runmon', 'beastmon', ...
-  name: String,         // 日本語表示名
-  emoji: String,        // 絵文字（アート代替）
-  requiredLevel: int,   // 解放に必要なレベル
-  nextEvolutions: List<String>, // 分岐先 ID（0〜2）
-  requiredParent: String?,      // 親進化 ID（ルートは null）
-  description: String   // フレーバーテキスト
+  id: String,                    // 'runmon', 'grandmon', ...
+  name: String,                  // 日本語表示名
+  emoji: String,                 // 絵文字（β版フォールバック表示用）
+  requiredLevel: int,            // 解放に必要なレベル
+  nextEvolutions: List<String>,  // 分岐先 ID（Lv10/20/30 は 2件、Lv40 は 0件）
+  requiredParent: String?,       // 親進化 ID（ランモンは null）
+  isFinalForm: bool,             // true = Lv40 最終形態（選択なし）
+  description: String            // フレーバーテキスト
 }
 ```
+
+### 全ノードテーブル
+
+| ID | 名前 | Lv | 親 | 次（2択） | 最終 |
+|----|-----|---|---|--------|-----|
+| runmon | ランモン | 1 | — | grandmon, wingmon | — |
+| grandmon | グランドモン | 10 | runmon | beastmon, knightmon | — |
+| wingmon | ウィングモン | 10 | runmon | birdmon, spirimon | — |
+| beastmon | ビーストモン | 20 | grandmon | fenrirmon, leomon | — |
+| knightmon | ナイトモン | 20 | grandmon | paladinmon, darkknightmon | — |
+| birdmon | バードモン | 20 | wingmon | phenixmon, raichomon | — |
+| spirimon | スピリモン | 20 | wingmon | luxmon, noxmon | — |
+| fenrirmon | フェンリルモン | 30 | beastmon | fenrirlord | — |
+| leomon | レオモン | 30 | beastmon | solreonlord | — |
+| paladinmon | パラディンモン | 30 | knightmon | saintpaladin | — |
+| darkknightmon | ダークナイトモン | 30 | knightmon | abyssknightlord | — |
+| phenixmon | フェニモン | 30 | birdmon | phoenixlord | — |
+| raichomon | ライチョウモン | 30 | birdmon | thunderbirdlord | — |
+| luxmon | ルクスモン | 30 | spirimon | luminousseraph | — |
+| noxmon | ノクスモン | 30 | spirimon | noxphantom | — |
+| fenrirlord | フェンリルロード | 40 | fenrirmon | — | ✅ |
+| solreonlord | ソルレオンロード | 40 | leomon | — | ✅ |
+| saintpaladin | セイントパラディン | 40 | paladinmon | — | ✅ |
+| abyssknightlord | アビスナイトロード | 40 | darkknightmon | — | ✅ |
+| phoenixlord | フェニックスロード | 40 | phenixmon | — | ✅ |
+| thunderbirdlord | サンダーバードロード | 40 | raichomon | — | ✅ |
+| luminousseraph | ルミナスセラフ | 40 | luxmon | — | ✅ |
+| noxphantom | ノクスファントム | 40 | noxmon | — | ✅ |
 
 ---
 
